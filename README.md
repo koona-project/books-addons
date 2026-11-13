@@ -16,7 +16,7 @@ The add-ons that come with [Koona Books](https://koona.app), the starters for wr
 
 The folders are a copy and are not edited here: [SOURCE.md](SOURCE.md) says which state of Koona Books they are. A pull request that changes them cannot be taken; a fault in one is best reported as an issue.
 
-Each add-on's `addon.json` names its license.
+The add-ons in `examples/` and `starters/`, and the copies of them in the skill's folder, are under the MIT license: [LICENSE](LICENSE). Each add-on's `addon.json` names it too.
 
 ## Writing an add-on with a coding agent
 

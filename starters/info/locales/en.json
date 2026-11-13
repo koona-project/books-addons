@@ -1,0 +1,5 @@
+{
+  "does": "Looks a book up in the Example catalog when you ask for its information or a cover: by its ISBN, or by its title and author. You see what was found beside what your library has, and nothing changes until you choose.",
+  "works": "The Example catalog at example.org",
+  "changes": "First version"
+}

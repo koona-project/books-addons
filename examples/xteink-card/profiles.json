@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "profiles": [
+    { "id": "x4", "name": "Xteink X4",
+      "markers": [[".crosspoint"]],
+      "formats": ["epub", "txt"], "converts": ["epub"],
+      "pattern": "{author}",
+      "protected": [".crosspoint"] }
+  ]
+}

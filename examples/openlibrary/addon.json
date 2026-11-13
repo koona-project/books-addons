@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "app.koona.openlibrary",
+  "version": "1.0.0",
+  "api": 1,
+  "min_app": "0.1.0",
+  "name": { "en": "Open Library", "es": "Open Library", "de": "Open Library" },
+  "summary": {
+    "en": "Book information and covers from openlibrary.org",
+    "es": "Información de libros y portadas de openlibrary.org",
+    "de": "Buchinformationen und Cover von openlibrary.org"
+  },
+  "glyph": "search",
+  "category": "info",
+  "author": { "name": "Koona", "url": "https://koona.app" },
+  "homepage": "https://openlibrary.org",
+  "license": "MIT",
+  "permissions": {
+    "network": {
+      "hosts": ["openlibrary.org", "covers.openlibrary.org", "archive.org", "*.archive.org"],
+      "pace": { "per_minute": 60, "burst": 1 }
+    },
+    "book_query": true
+  },
+  "privacy": { "sends": ["book_details_to_service"], "collects": [] },
+  "tested": { "on": "openlibrary.org, four requests by hand", "date": "2026-11-12" },
+  "provides": [
+    { "type": "book_info", "id": "openlibrary", "entry": "info.lua",
+      "languages": ["*"], "finds_by": ["isbn", "title_author"], "finds": ["info", "covers"] }
+  ]
+}

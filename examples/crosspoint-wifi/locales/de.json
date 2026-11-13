@@ -1,0 +1,12 @@
+{
+  "does": "Sendet Bücher über dein WLAN an einen Xteink X4 oder X3. Auf dem Reader muss die Dateiübertragung (File Transfer) geöffnet sein.",
+  "works": "Xteink X4 und X3 · CrossPoint 1.3 oder neuer",
+  "changes": "Erste Version",
+  "target.x4.add": "Einen Xteink-Reader hinzufügen",
+  "target.x4.how": "Öffne auf dem Reader File Transfer und verbinde ihn mit deinem WLAN. Sein Bildschirm zeigt die Adresse.",
+  "target.x4.device": "Xteink-Reader",
+  "setting.address": "Adresse",
+  "setting.folder": "Ordner auf dem Reader",
+  "error.unreachable": "Unter {address} antwortet nichts. Ist File Transfer auf dem Reader geöffnet, und ist er in diesem WLAN?",
+  "error.not_a_reader": "Unter {address} antwortet etwas, aber es ist kein Reader mit CrossPoint"
+}

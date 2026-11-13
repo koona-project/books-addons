@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "id": "app.koona.citations",
+  "version": "1.0.0",
+  "api": 1,
+  "min_app": "0.1.0",
+  "name": { "en": "Citations", "es": "Citas", "de": "Zitate" },
+  "summary": {
+    "en": "Copy a citation of your books, or save them as BibTeX",
+    "es": "Copia una cita de tus libros o guárdalos como BibTeX",
+    "de": "Eine Quellenangabe deiner Bücher kopieren oder sie als BibTeX speichern"
+  },
+  "glyph": "copy",
+  "category": "tools",
+  "author": { "name": "Koona", "url": "https://koona.app" },
+  "license": "MIT",
+  "permissions": { "book_details": true },
+  "privacy": { "sends": [], "collects": [] },
+  "tested": { "on": "the app's own tests: Russian and English books, BibTeX's own characters", "date": "2026-11-12" },
+  "provides": [
+    { "type": "book_action", "id": "cite", "entry": "cite.lua", "gives": "text", "max_books": 100 },
+    { "type": "list_export", "id": "bibtex", "entry": "cite.lua", "extension": "bib", "file_name": "books" }
+  ]
+}

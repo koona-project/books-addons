@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "id": "app.koona.book-links",
+  "version": "1.0.0",
+  "api": 1,
+  "min_app": "0.1.0",
+  "name": { "en": "Book links", "es": "Enlaces de libros", "de": "Buchlinks" },
+  "summary": {
+    "en": "Find a book on Hardcover or Open Library in your browser",
+    "es": "Busca un libro en Hardcover u Open Library en tu navegador",
+    "de": "Ein Buch bei Hardcover oder Open Library im Browser suchen"
+  },
+  "glyph": "link",
+  "category": "tools",
+  "author": { "name": "Koona", "url": "https://koona.app" },
+  "license": "MIT",
+  "permissions": {
+    "book_details": true,
+    "links": { "hosts": ["hardcover.app", "openlibrary.org"] }
+  },
+  "privacy": { "sends": ["book_details_in_links"], "collects": [] },
+  "tested": { "on": "the app's own tests; the search pages not yet opened by hand", "date": "2026-11-12" },
+  "provides": [
+    { "type": "book_action", "id": "hardcover", "entry": "links.lua", "gives": "link",
+      "host": "hardcover.app" },
+    { "type": "book_action", "id": "openlibrary", "entry": "links.lua", "gives": "link",
+      "host": "openlibrary.org" }
+  ]
+}

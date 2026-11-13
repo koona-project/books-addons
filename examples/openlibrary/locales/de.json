@@ -1,0 +1,5 @@
+{
+  "does": "Schlägt ein Buch bei Open Library nach, wenn du nach seinen Informationen oder einem Cover fragst: nach seiner ISBN oder nach Titel und Autor. Du siehst das Gefundene neben dem, was deine Bibliothek hat, und nichts ändert sich, bevor du wählst.",
+  "works": "openlibrary.org, ein freier Katalog von Büchern in vielen Sprachen",
+  "changes": "Erste Version"
+}

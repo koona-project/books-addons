@@ -1,0 +1,7 @@
+{
+  "does": "Copies a citation of the books you pick, one a line, to paste into your writing. Saves a list of books as a BibTeX file for LaTeX and reference managers.",
+  "works": "Any text you write · BibTeX, LaTeX, Zotero, JabRef",
+  "changes": "First version",
+  "action.cite.label": "Copy citation",
+  "export.bibtex.label": "BibTeX"
+}

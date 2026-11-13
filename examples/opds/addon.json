@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "id": "app.koona.opds",
+  "version": "1.0.0",
+  "api": 1,
+  "min_app": "0.1.0",
+  "name": { "en": "OPDS catalogs", "es": "Catálogos OPDS", "de": "OPDS-Kataloge" },
+  "summary": {
+    "en": "Add books from a catalog you name",
+    "es": "Añade libros desde un catálogo que tú indiques",
+    "de": "Bücher aus einem Katalog hinzufügen, den du angibst"
+  },
+  "glyph": "catalogue",
+  "category": "import",
+  "author": { "name": "Koona", "url": "https://koona.app" },
+  "license": "MIT",
+  "works_with": {
+    "devices": ["Calibre", "Calibre-Web", "Kavita", "Komga", "COPS", "Project Gutenberg"],
+    "needs": "A catalog that speaks OPDS 1"
+  },
+  "permissions": {
+    "network": { "named_server": true },
+    "secrets": true
+  },
+  "privacy": { "sends": ["searches_to_service"], "collects": ["account"] },
+  "settings": [
+    { "key": "server", "type": "server" },
+    { "key": "user", "type": "text", "role": "user" },
+    { "key": "password", "type": "secret", "role": "password" }
+  ],
+  "provides": [
+    { "type": "import_source", "id": "opds", "entry": "opds.lua" }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "id": "app.koona.book-list-csv",
+  "version": "1.0.0",
+  "api": 1,
+  "min_app": "0.1.0",
+  "name": { "en": "Book list as CSV", "es": "Lista de libros en CSV", "de": "Bücherliste als CSV" },
+  "summary": {
+    "en": "Save a list of your books as a spreadsheet, and mark books as read from one",
+    "es": "Guarda una lista de tus libros como hoja de cálculo y marca libros como leídos a partir de una",
+    "de": "Eine Liste deiner Bücher als Tabelle speichern und Bücher anhand einer Tabelle als gelesen markieren"
+  },
+  "glyph": "columns",
+  "category": "tools",
+  "author": { "name": "Koona", "url": "https://koona.app" },
+  "license": "MIT",
+  "permissions": {
+    "book_details": true,
+    "reading_state": true,
+    "input_file": ["csv"]
+  },
+  "privacy": { "sends": [], "collects": [] },
+  "tested": { "on": "the app's own tests: a list written and read back", "date": "2026-11-12" },
+  "provides": [
+    { "type": "list_export", "id": "csv", "entry": "list.lua", "extension": "csv", "file_name": "books" },
+    { "type": "list_import", "id": "csv", "entry": "list.lua", "extensions": ["csv"],
+      "carries": ["status", "finished_at"] }
+  ]
+}

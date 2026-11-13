@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "id": "org.example.tools-starter",
+  "version": "0.1.0",
+  "api": 1,
+  "min_app": "0.1.0",
+  "name": { "en": "Tools starter" },
+  "summary": { "en": "Copy books as Markdown links, find a book on example.org, save a list as Markdown" },
+  "glyph": "link",
+  "category": "tools",
+  "author": { "name": "Your Name" },
+  "license": "MIT",
+  "permissions": {
+    "book_details": true,
+    "links": { "hosts": ["example.org"] }
+  },
+  "privacy": { "sends": ["book_details_in_links"], "collects": [] },
+  "provides": [
+    { "type": "book_action", "id": "markdown_links", "entry": "actions.lua", "gives": "text",
+      "max_books": 100 },
+    { "type": "book_action", "id": "search", "entry": "actions.lua", "gives": "link",
+      "host": "example.org" },
+    { "type": "list_export", "id": "markdown", "entry": "list.lua", "extension": "md",
+      "file_name": "reading-list" }
+  ]
+}

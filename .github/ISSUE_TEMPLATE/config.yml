@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: The form that fills this in
+    url: https://addme.dev/books/submit
+    about: Checks the repository and the manifest first, then opens the issue for you
+  - name: How to write an add-on
+    url: https://addons.koona.app/books/docs/
+    about: The reference for authors, the examples and the starters

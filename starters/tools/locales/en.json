@@ -1,0 +1,9 @@
+{
+  "does": "Copies the books you pick as a Markdown list of links, opens a book's search page on example.org, and saves a list of books as a Markdown file.",
+  "works": "Any Markdown editor · example.org, in your browser",
+  "changes": "First version",
+  "action.markdown_links.label": "Copy as Markdown links",
+  "action.search.label": "Find on example.org",
+  "export.markdown.label": "Markdown list",
+  "error.missing": "This book has no ISBN and no title to search example.org by"
+}

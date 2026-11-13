@@ -1,0 +1,74 @@
+name: Offer an add-on
+description: Offer an add-on for Koona Books for Koona's checked list
+title: "<name> <version>"
+labels: ["submission"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The form at https://addme.dev/books/submit fills this in for you and checks the simple things first.
+        A person at Koona reads the add-on's code at the commit below before anything is signed. This issue is public.
+  - type: textarea
+    id: what
+    attributes:
+      label: What the add-on does
+      description: In your own words. What it adds, for which reader or service, and how you tried it
+    validations:
+      required: true
+  - type: input
+    id: repository
+    attributes:
+      label: Repository
+      description: The public repository on GitHub
+      placeholder: https://github.com/you/your-add-on
+    validations:
+      required: true
+  - type: input
+    id: folder
+    attributes:
+      label: Folder
+      description: The folder that holds addon.json. Leave empty when it is at the top of the repository
+    validations:
+      required: false
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: The full id of the commit you offer. The review is of exactly this state
+    validations:
+      required: true
+  - type: input
+    id: tag
+    attributes:
+      label: Tag
+      description: The tag of that commit, if it has one
+    validations:
+      required: false
+  - type: input
+    id: addon-id
+    attributes:
+      label: Add-on id
+      description: The id in addon.json
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The version in addon.json
+    validations:
+      required: true
+  - type: input
+    id: license
+    attributes:
+      label: License
+      description: The license in addon.json
+    validations:
+      required: true
+  - type: checkboxes
+    id: agree
+    attributes:
+      label: Before you submit
+      options:
+        - label: I wrote this add-on or may offer it, and its license text is in its folder as LICENSE.md
+          required: true

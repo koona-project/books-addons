@@ -1,0 +1,7 @@
+{
+  "does": "Copia una cita de los libros que elijas, una por línea, para pegarla en tu texto. Guarda una lista de libros como archivo BibTeX para LaTeX y gestores de referencias.",
+  "works": "Cualquier texto que escribas · BibTeX, LaTeX, Zotero, JabRef",
+  "changes": "Primera versión",
+  "action.cite.label": "Copiar cita",
+  "export.bibtex.label": "BibTeX"
+}

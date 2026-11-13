@@ -1,0 +1,9 @@
+{
+  "does": "Opens the Example catalog from Add books, so you can browse it, search it and add its books to your library. Koona Books downloads the files itself, only from the catalog.",
+  "works": "The Example catalog at example.org",
+  "changes": "First version",
+  "source.example.place": "the Example catalog",
+  "error.not_found": "The Example catalog has no such page",
+  "error.refused": "The Example catalog would not answer the request",
+  "error.not_understood": "The Example catalog answered with something this add-on does not read"
+}

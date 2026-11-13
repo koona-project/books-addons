@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "id": "app.koona.xteink-card",
+  "version": "1.0.0",
+  "api": 1,
+  "min_app": "0.1.0",
+  "name": { "en": "Xteink memory card", "es": "Tarjeta de memoria Xteink", "de": "Xteink-Speicherkarte" },
+  "summary": {
+    "en": "Sends books to the memory card of an Xteink reader",
+    "es": "Envía libros a la tarjeta de memoria de un lector Xteink",
+    "de": "Sendet Bücher auf die Speicherkarte eines Xteink-Readers"
+  },
+  "glyph": "reader",
+  "category": "send",
+  "author": { "name": "Koona", "url": "https://koona.app" },
+  "license": "MIT",
+  "works_with": { "devices": ["Xteink X4"], "needs": "CrossPoint on the reader" },
+  "permissions": {},
+  "privacy": { "sends": [], "collects": [] },
+  "tested": { "on": "the app's own tests; not yet with a reader's card in a computer", "date": "2026-11-12" },
+  "provides": [
+    { "type": "device_profiles", "id": "xteink", "data": "profiles.json", "readers": ["x4"] }
+  ]
+}

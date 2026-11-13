@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "id": "app.koona.hardcover",
+  "version": "1.0.0",
+  "api": 1,
+  "min_app": "0.1.0",
+  "name": { "en": "Hardcover", "es": "Hardcover", "de": "Hardcover" },
+  "summary": {
+    "en": "Your reading, in step with your Hardcover shelf",
+    "es": "Tu lectura, al día con tu estantería de Hardcover",
+    "de": "Dein Lesestand, im Gleichschritt mit deinem Hardcover-Regal"
+  },
+  "glyph": "list",
+  "category": "sync",
+  "author": { "name": "Koona", "url": "https://koona.app" },
+  "homepage": "https://hardcover.app",
+  "license": "MIT",
+  "permissions": {
+    "network": {
+      "hosts": ["api.hardcover.app"],
+      "pace": { "per_minute": 50, "burst": 5 }
+    },
+    "reading_state": true,
+    "sign_in": {
+      "kind": "oauth2_pkce",
+      "issuer": "https://api.hardcover.app",
+      "authorize": "https://hardcover.app/oauth2/authorize",
+      "token": "https://api.hardcover.app/oauth2/token",
+      "revoke": "https://api.hardcover.app/oauth2/revoke",
+      "client_id": "bfcaa6a2-37bf-4a04-b902-e21f27620646",
+      "scopes": ["read:catalog", "read:library", "write:library", "read:me:content"]
+    }
+  },
+  "privacy": { "sends": ["reading_state_to_service"], "collects": ["account"] },
+  "provides": [
+    { "type": "reading_sync", "id": "hardcover", "entry": "sync.lua",
+      "directions": ["from", "to"], "carries": ["status", "progress", "finished_at"],
+      "match_by": "identifiers" }
+  ]
+}

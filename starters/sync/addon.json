@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "id": "org.example.sync-starter",
+  "version": "0.1.0",
+  "api": 1,
+  "min_app": "0.1.0",
+  "name": { "en": "Example Shelf" },
+  "summary": { "en": "Your reading, in step with your shelf on an Example Shelf server" },
+  "glyph": "refresh",
+  "category": "sync",
+  "author": { "name": "Your Name" },
+  "license": "MIT",
+  "permissions": {
+    "network": {
+      "named_server": true,
+      "pace": { "per_minute": 60, "burst": 10 }
+    },
+    "secrets": true,
+    "reading_state": true
+  },
+  "privacy": { "sends": ["reading_state_to_service"], "collects": ["account"] },
+  "settings": [
+    { "key": "server", "type": "server" },
+    { "key": "user", "type": "text", "role": "user" },
+    { "key": "password", "type": "secret", "role": "password" }
+  ],
+  "provides": [
+    { "type": "reading_sync", "id": "shelf", "entry": "sync.lua",
+      "directions": ["from", "to"], "carries": ["status", "progress", "finished_at"],
+      "match_by": "identifiers" }
+  ]
+}

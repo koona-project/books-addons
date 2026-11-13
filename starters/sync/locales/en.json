@@ -1,0 +1,12 @@
+{
+  "does": "Keeps what you are reading and what you have read in step with your shelf on an Example Shelf server, both ways. Books are matched by ISBN.",
+  "changes": "First version",
+  "sync.shelf.setup": "Example Shelf server",
+  "sync.shelf.how": "Use the server, user and password you sign in to Example Shelf with.",
+  "setting.server": "Server",
+  "setting.server.hint": "The address of your Example Shelf server, such as shelf.example.org",
+  "setting.user": "User",
+  "setting.password": "Password",
+  "error.bad_login": "The server does not know this user and password",
+  "error.not_a_server": "Something answers at {address}, but it is not an Example Shelf server"
+}

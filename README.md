@@ -11,11 +11,31 @@ The add-ons that come with [Koona Books](https://koona.app), the starters for wr
 | --- | --- |
 | [`examples/`](examples) | The nine add-ons that come with Koona Books, as the app ships them. Read them as models; do not copy one: its `id`, `name` and `author` are Koona's, and an add-on that keeps them is refused |
 | [`starters/`](starters) | One small working add-on for each category (`send`, `import`, `sync`, `info`, `tools`). Copy a folder, rename it, and make it yours |
+| [`skill/koona-books-addons/`](skill/koona-books-addons) | The skill that teaches a coding agent to write an add-on: see below |
 | Issues | Each open issue offers one add-on, in its author's own repository, for Koona's checked list |
 
 The folders are a copy and are not edited here: [SOURCE.md](SOURCE.md) says which state of Koona Books they are. A pull request that changes them cannot be taken; a fault in one is best reported as an issue.
 
 Each add-on's `addon.json` names its license.
+
+## Writing an add-on with a coding agent
+
+`skill/koona-books-addons/` is an agent skill: instructions for the agent ([`SKILL.md`](skill/koona-books-addons/SKILL.md)), the authors' pages as its reference, the examples, the starters and the manifest's schema, in one folder that works on its own.
+
+1. Get the folder: clone this repository, or download [the zip](https://addons.koona.app/books/docs/download/koona-books-addons-skill.zip), which holds the same folder.
+2. Put `koona-books-addons` where your agent keeps its skills. For Claude Code:
+
+   ```sh
+   git clone https://github.com/koona-project/books-addons
+   cp -r books-addons/skill/koona-books-addons ~/.claude/skills/
+   ```
+
+   `~/.claude/skills/` serves every project; `.claude/skills/` inside a project serves that one.
+3. Ask for what you want in plain words, for example "write a Koona Books add-on that sends books to my reader". The agent picks the skill up by itself.
+
+An agent without a skills folder can be told to read `skill/koona-books-addons/SKILL.md` first.
+
+The agent cannot run an add-on: only Koona Books can. It writes the folder and tells you how to load it; [trying an add-on](https://addons.koona.app/books/docs/) is described in the pages for authors.
 
 ## How a submission goes
 

@@ -1,0 +1,12 @@
+{
+  "does": "Envía libros a un Xteink X4 o X3 por tu Wi-Fi. La transferencia de archivos (File Transfer) debe estar abierta en el lector.",
+  "works": "Xteink X4 y X3 · CrossPoint 1.3 o posterior",
+  "changes": "Primera versión",
+  "target.x4.add": "Añadir un lector Xteink",
+  "target.x4.how": "En el lector, abre File Transfer y conéctalo a tu Wi-Fi. Su pantalla muestra la dirección.",
+  "target.x4.device": "Lector Xteink",
+  "setting.address": "Dirección",
+  "setting.folder": "Carpeta en el lector",
+  "error.unreachable": "No responde nada en {address}. ¿Está abierto File Transfer en el lector y está en esta red Wi-Fi?",
+  "error.not_a_reader": "Algo responde en {address}, pero no es un lector con CrossPoint"
+}

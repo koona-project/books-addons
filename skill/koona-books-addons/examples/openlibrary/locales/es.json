@@ -1,0 +1,5 @@
+{
+  "does": "Busca un libro en Open Library cuando pides su información o una portada: por su ISBN, o por su título y autor. Ves lo encontrado junto a lo que tiene tu biblioteca, y nada cambia hasta que tú elijas.",
+  "works": "openlibrary.org, un catálogo gratuito de libros en muchos idiomas",
+  "changes": "Primera versión"
+}

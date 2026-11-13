@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "id": "org.example.send-starter",
+  "version": "0.1.0",
+  "api": 1,
+  "min_app": "0.1.0",
+  "name": { "en": "Example Reader over Wi-Fi" },
+  "summary": { "en": "Send books to an Example Reader on your own network, without a cable" },
+  "glyph": "wifi",
+  "category": "send",
+  "author": { "name": "Your Name" },
+  "license": "MIT",
+  "works_with": { "devices": ["Example Reader"], "needs": "Book transfer open on the reader" },
+  "permissions": {
+    "network": { "local_device": { "ports": [8080] } }
+  },
+  "privacy": { "sends": ["book_files_to_your_device"], "collects": [] },
+  "settings": [
+    { "key": "address", "type": "host" },
+    { "key": "folder", "type": "text", "default": "/Books", "role": "folder" }
+  ],
+  "provides": [
+    { "type": "send_target", "id": "reader", "entry": "send.lua",
+      "formats": ["epub", "pdf"], "converts": ["epub"], "max_file_mb": 100, "can_list": true }
+  ]
+}

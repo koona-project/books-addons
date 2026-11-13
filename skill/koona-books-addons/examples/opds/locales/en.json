@@ -1,0 +1,22 @@
+{
+  "does": "Opens a book catalog you name, such as your Calibre at home or Project Gutenberg, so you can browse it, search it and add its books to your library. Koona Books downloads the files itself, only from the catalog.",
+  "works": "Catalogs that speak OPDS 1: Calibre, Calibre-Web, Kavita, Komga, COPS, Project Gutenberg",
+  "changes": "First version",
+  "source.opds.add": "Add a catalog",
+  "source.opds.how": "Type the catalog address as its server shows it. A user name and a password are needed only when the catalog asks for them.",
+  "source.opds.place": "the catalog",
+  "setting.server": "Address",
+  "setting.server.hint": "Such as 192.168.1.10:8080/opds",
+  "setting.user": "User name",
+  "setting.password": "Password",
+  "error.sign_in": "The catalog does not take this user name and password",
+  "error.not_a_catalogue": "Something answers at {address}, but it is not an OPDS catalog",
+  "error.not_found": "There is no catalog at {address}. Is the part after the slash right?",
+  "error.moved": "{address} sends you to another site. Type that address instead",
+  "error.unreachable": "Nothing answers at {address}. Is the address right?",
+  "error.timeout": "{address} took too long to answer",
+  "error.tls": "The connection to {address} could not be made safe",
+  "error.too_large": "The catalog sent a page larger than Koona Books reads",
+  "error.refused": "The catalog would not answer the request",
+  "error.no_search": "This catalog has no search"
+}

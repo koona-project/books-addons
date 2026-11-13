@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "id": "org.example.info-starter",
+  "version": "0.1.0",
+  "api": 1,
+  "min_app": "0.1.0",
+  "name": { "en": "Info starter" },
+  "summary": { "en": "Book information and covers from the Example catalog" },
+  "glyph": "search",
+  "category": "info",
+  "author": { "name": "Your Name" },
+  "license": "MIT",
+  "permissions": {
+    "network": {
+      "hosts": ["api.example.org"],
+      "pace": { "per_minute": 30, "burst": 2 }
+    },
+    "book_query": true
+  },
+  "privacy": { "sends": ["book_details_to_service"], "collects": [] },
+  "provides": [
+    { "type": "book_info", "id": "example", "entry": "info.lua",
+      "languages": ["*"], "finds_by": ["isbn", "title_author"], "finds": ["info", "covers"] }
+  ]
+}

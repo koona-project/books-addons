@@ -1,0 +1,7 @@
+{
+  "does": "Guarda los libros que elijas en un archivo CSV que abre cualquier hoja de cálculo, con su estado de lectura. Lee un archivo así para marcar libros como leídos o terminados.",
+  "works": "Archivos CSV: Excel, Numbers, LibreOffice, Google Sheets",
+  "changes": "Primera versión",
+  "export.csv.label": "Hoja de cálculo CSV",
+  "import.csv.label": "Estado de lectura desde una hoja de cálculo CSV"
+}

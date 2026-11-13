@@ -1,0 +1,7 @@
+{
+  "does": "Kopiert eine Quellenangabe der ausgewählten Bücher, eine pro Zeile, zum Einfügen in deinen Text. Speichert eine Bücherliste als BibTeX-Datei für LaTeX und Literaturverwaltungen.",
+  "works": "Jeder Text, den du schreibst · BibTeX, LaTeX, Zotero, JabRef",
+  "changes": "Erste Version",
+  "action.cite.label": "Quellenangabe kopieren",
+  "export.bibtex.label": "BibTeX"
+}

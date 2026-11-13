@@ -1,0 +1,15 @@
+{
+  "does": "Hält deine Lesestelle mit KOReader und mit Xteink-Readern mit CrossPoint auf demselben Stand, über den Sync-Server, den sie verwenden. Bücher werden über die Kopie zugeordnet, die Koona Books an den Reader gesendet hat.",
+  "works": "KOReader auf jedem Gerät · Xteink X4 und X3 mit CrossPoint",
+  "changes": "Erste Version",
+  "sync.kosync.setup": "KOReader-Sync-Server",
+  "sync.kosync.how": "Verwende denselben Server, denselben Benutzer und dasselbe Passwort wie auf deinem Reader (KOReader: Progress sync. CrossPoint: KOReader Sync).",
+  "setting.server": "Server",
+  "setting.server.hint": "Die Adresse, mit der dein Reader synchronisiert, zum Beispiel sync.koreader.rocks",
+  "setting.user": "Benutzer",
+  "setting.password": "Passwort",
+  "error.bad_login": "Der Server kennt diesen Benutzer und dieses Passwort nicht",
+  "error.bad_user": "Der Benutzername enthält Zeichen, die ein Sync-Server nicht annimmt",
+  "error.not_a_server": "Unter {address} antwortet etwas, aber es ist kein KOReader-Sync-Server",
+  "error.unreachable": "Unter {address} antwortet nichts. Stimmt die Adresse?"
+}

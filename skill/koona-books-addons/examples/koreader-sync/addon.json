@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "id": "app.koona.koreader-sync",
+  "version": "1.0.0",
+  "api": 1,
+  "min_app": "0.1.0",
+  "name": { "en": "KOReader sync", "es": "Sincronización con KOReader", "de": "KOReader-Synchronisierung" },
+  "summary": {
+    "en": "Keep your place in step with KOReader and CrossPoint",
+    "es": "Mantén tu punto de lectura al día con KOReader y CrossPoint",
+    "de": "Deine Lesestelle im Gleichschritt mit KOReader und CrossPoint"
+  },
+  "glyph": "refresh",
+  "category": "sync",
+  "author": { "name": "Koona", "url": "https://koona.app" },
+  "license": "MIT",
+  "works_with": {
+    "devices": ["KOReader", "Xteink X4", "Xteink X3"],
+    "needs": "A KOReader progress sync server and an account on it"
+  },
+  "permissions": {
+    "network": { "named_server": true },
+    "secrets": true,
+    "reading_state": true
+  },
+  "privacy": { "sends": ["reading_state_to_service"], "collects": ["account"] },
+  "settings": [
+    { "key": "server", "type": "server" },
+    { "key": "user", "type": "text", "role": "user" },
+    { "key": "password", "type": "secret", "role": "password" }
+  ],
+  "provides": [
+    { "type": "reading_sync", "id": "kosync", "entry": "sync.lua",
+      "directions": ["from", "to"], "carries": ["status", "progress"], "match_by": "document" }
+  ]
+}

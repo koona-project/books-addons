@@ -1,0 +1,7 @@
+{
+  "does": "Opens a book's page of search results on Hardcover or Open Library in your browser: by its ISBN, or by its title and author.",
+  "works": "hardcover.app and openlibrary.org, in your browser",
+  "changes": "First version",
+  "action.hardcover.label": "Find on Hardcover",
+  "action.openlibrary.label": "Find on Open Library"
+}

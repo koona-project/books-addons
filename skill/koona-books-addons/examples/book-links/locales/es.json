@@ -1,0 +1,7 @@
+{
+  "does": "Abre en tu navegador la página de resultados de búsqueda de un libro en Hardcover u Open Library: por su ISBN, o por su título y autor.",
+  "works": "hardcover.app y openlibrary.org, en tu navegador",
+  "changes": "Primera versión",
+  "action.hardcover.label": "Buscar en Hardcover",
+  "action.openlibrary.label": "Buscar en Open Library"
+}

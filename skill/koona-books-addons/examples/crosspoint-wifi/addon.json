@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "id": "app.koona.crosspoint-wifi",
+  "version": "1.0.0",
+  "api": 1,
+  "min_app": "0.1.0",
+  "name": { "en": "CrossPoint over Wi-Fi", "es": "CrossPoint por Wi-Fi", "de": "CrossPoint über WLAN" },
+  "summary": {
+    "en": "Send books to an Xteink reader without a cable",
+    "es": "Envía libros a un lector Xteink sin cable",
+    "de": "Bücher ohne Kabel an einen Xteink-Reader senden"
+  },
+  "glyph": "wifi",
+  "category": "send",
+  "author": { "name": "Koona", "url": "https://koona.app" },
+  "license": "MIT",
+  "works_with": { "devices": ["Xteink X4", "Xteink X3"], "needs": "CrossPoint 1.3 or newer" },
+  "permissions": {
+    "network": { "local_device": { "ports": [80] } },
+    "secrets": false
+  },
+  "privacy": { "sends": ["book_files_to_your_device"], "collects": [] },
+  "settings": [
+    { "key": "address", "type": "host" },
+    { "key": "folder", "type": "text", "default": "/Books", "role": "folder" }
+  ],
+  "provides": [
+    { "type": "send_target", "id": "x4", "entry": "send.lua",
+      "formats": ["epub", "txt"], "converts": ["epub"], "max_file_mb": 200, "can_list": true }
+  ]
+}

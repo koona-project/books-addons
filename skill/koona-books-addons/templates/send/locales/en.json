@@ -1,0 +1,12 @@
+{
+  "does": "Sends books to an Example Reader over your Wi-Fi. Book transfer must be open on the reader.",
+  "works": "Example Reader · Book transfer open on it",
+  "changes": "First version",
+  "target.reader.add": "Add an Example Reader",
+  "target.reader.how": "On the reader, open Book transfer and join your Wi-Fi. Its screen shows the address to type here.",
+  "target.reader.device": "Example Reader",
+  "setting.address": "Address",
+  "setting.folder": "Folder on the reader",
+  "error.unreachable": "Nothing answers at {address}. Is Book transfer open on the reader, and is it on this Wi-Fi?",
+  "error.not_a_reader": "Something answers at {address}, but it is not an Example Reader"
+}

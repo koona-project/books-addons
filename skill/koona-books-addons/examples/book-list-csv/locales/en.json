@@ -1,0 +1,7 @@
+{
+  "does": "Saves the books you pick as a CSV file that a spreadsheet opens, with their reading state. Reads such a file back to mark books as read or finished.",
+  "works": "CSV files: Excel, Numbers, LibreOffice, Google Sheets",
+  "changes": "First version",
+  "export.csv.label": "CSV spreadsheet",
+  "import.csv.label": "Reading state from a CSV spreadsheet"
+}

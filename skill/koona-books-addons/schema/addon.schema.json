@@ -1,0 +1,992 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://addons.koona.app/books/docs/schema/addon.schema.json",
+  "title": "addon.json",
+  "description": "The manifest of a Koona Books add-on, as the app reads it at API level 1. Generated from the app's own check; what a schema cannot say is listed in x-koona-rules.",
+  "x-koona-api": 1,
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "maxLength": 100,
+      "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?){1,5}$",
+      "not": {
+        "pattern": "^(con|prn|aux|nul|com[1-9]|lpt[1-9])\\."
+      }
+    },
+    "version": {
+      "$ref": "#/$defs/version"
+    },
+    "api": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1
+    },
+    "min_app": {
+      "$ref": "#/$defs/version"
+    },
+    "name": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8}){0,3}$"
+      },
+      "maxProperties": 40,
+      "required": ["en"],
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 60,
+        "pattern": "^[^\\x00-\\x20\\x7f-\\x9f]([^\\x00-\\x1f\\x7f-\\x9f]*[^\\x00-\\x20\\x7f-\\x9f])?$"
+      }
+    },
+    "summary": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8}){0,3}$"
+      },
+      "maxProperties": 40,
+      "required": ["en"],
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 140,
+        "pattern": "^[^\\x00-\\x20\\x7f-\\x9f]([^\\x00-\\x1f\\x7f-\\x9f]*[^\\x00-\\x20\\x7f-\\x9f])?$"
+      }
+    },
+    "glyph": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,31}$"
+    },
+    "category": {
+      "enum": ["send", "import", "sync", "info", "tools"]
+    },
+    "author": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[^\\x00-\\x20\\x7f-\\x9f]([^\\x00-\\x1f\\x7f-\\x9f]*[^\\x00-\\x20\\x7f-\\x9f])?$"
+        },
+        "url": {
+          "$ref": "#/$defs/link"
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": false
+    },
+    "homepage": {
+      "$ref": "#/$defs/link"
+    },
+    "source": {
+      "$ref": "#/$defs/link"
+    },
+    "support": {
+      "$ref": "#/$defs/link"
+    },
+    "license": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9.+()-]([A-Za-z0-9.+ ()-]*[A-Za-z0-9.+()-])?$"
+    },
+    "works_with": {
+      "type": "object",
+      "properties": {
+        "devices": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "pattern": "^[^\\x00-\\x20\\x7f-\\x9f]([^\\x00-\\x1f\\x7f-\\x9f]*[^\\x00-\\x20\\x7f-\\x9f])?$"
+          }
+        },
+        "needs": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[^\\x00-\\x20\\x7f-\\x9f]([^\\x00-\\x1f\\x7f-\\x9f]*[^\\x00-\\x20\\x7f-\\x9f])?$"
+        }
+      },
+      "required": ["devices"],
+      "additionalProperties": false
+    },
+    "tested": {
+      "type": "object",
+      "properties": {
+        "on": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[^\\x00-\\x20\\x7f-\\x9f]([^\\x00-\\x1f\\x7f-\\x9f]*[^\\x00-\\x20\\x7f-\\x9f])?$"
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-((0[13578]|1[02])-(0[1-9]|[12][0-9]|3[01])|(0[469]|11)-(0[1-9]|[12][0-9]|30)|02-(0[1-9]|[12][0-9]))$",
+          "not": {
+            "pattern": "^0000"
+          }
+        }
+      },
+      "required": ["on", "date"],
+      "additionalProperties": false
+    },
+    "permissions": {
+      "type": "object",
+      "properties": {
+        "network": {
+          "type": "object",
+          "properties": {
+            "hosts": {
+              "$ref": "#/$defs/host_list"
+            },
+            "local_device": {
+              "type": "object",
+              "properties": {
+                "ports": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 8,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535
+                  }
+                }
+              },
+              "required": ["ports"],
+              "additionalProperties": false
+            },
+            "named_server": {
+              "type": "boolean"
+            },
+            "pace": {
+              "type": "object",
+              "properties": {
+                "per_minute": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 600
+                },
+                "burst": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100
+                }
+              },
+              "required": ["per_minute", "burst"],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false,
+          "anyOf": [
+            {
+              "required": ["hosts"]
+            },
+            {
+              "required": ["local_device"]
+            },
+            {
+              "properties": {
+                "named_server": {
+                  "const": true
+                }
+              },
+              "required": ["named_server"]
+            }
+          ]
+        },
+        "secrets": {
+          "type": "boolean"
+        },
+        "reading_state": {
+          "type": "boolean"
+        },
+        "input_file": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/format"
+          }
+        },
+        "book_query": {
+          "type": "boolean"
+        },
+        "sign_in": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "enum": ["oauth2_pkce"]
+            },
+            "issuer": {
+              "description": "https:// and a host, with no path and no / at the end",
+              "type": "string",
+              "maxLength": 300,
+              "pattern": "^https://[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$",
+              "not": {
+                "anyOf": [
+                  {
+                    "pattern": "\\.(0x[0-9a-f]*|[0-9]+)$"
+                  },
+                  {
+                    "pattern": "(^|[./])(local|localhost|internal|lan|home\\.arpa)$"
+                  },
+                  {
+                    "pattern": "(^|[./])koona\\.app$"
+                  }
+                ]
+              }
+            },
+            "authorize": {
+              "$ref": "#/$defs/sign_in_address"
+            },
+            "token": {
+              "$ref": "#/$defs/sign_in_address"
+            },
+            "revoke": {
+              "$ref": "#/$defs/sign_in_address"
+            },
+            "client_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._~-]{1,200}$"
+            },
+            "scopes": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 16,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9:._-]{1,64}$"
+              }
+            }
+          },
+          "required": ["kind", "issuer", "authorize", "token", "client_id", "scopes"],
+          "additionalProperties": false
+        },
+        "book_details": {
+          "type": "boolean"
+        },
+        "links": {
+          "type": "object",
+          "properties": {
+            "hosts": {
+              "$ref": "#/$defs/host_list"
+            }
+          },
+          "required": ["hosts"],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "privacy": {
+      "type": "object",
+      "properties": {
+        "sends": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["book_files_to_your_device", "reading_state_to_service", "book_details_to_service", "searches_to_service", "book_details_in_links"]
+          }
+        },
+        "collects": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["account"]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "settings": {
+      "type": "array",
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,31}$"
+          },
+          "type": {
+            "enum": ["text", "secret", "host", "server"]
+          },
+          "default": {
+            "type": "string"
+          },
+          "role": {
+            "enum": ["folder", "user", "password"]
+          }
+        },
+        "required": ["key", "type"],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "text"
+                }
+              },
+              "required": ["type"]
+            },
+            "then": {
+              "properties": {
+                "default": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "pattern": "^[^\\x00-\\x20\\x7f-\\x9f]([^\\x00-\\x1f\\x7f-\\x9f]*[^\\x00-\\x20\\x7f-\\x9f])?$"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "secret"
+                }
+              },
+              "required": ["type"]
+            },
+            "then": {
+              "not": {
+                "required": ["default"]
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "host"
+                }
+              },
+              "required": ["type"]
+            },
+            "then": {
+              "properties": {
+                "default": {
+                  "maxLength": 253,
+                  "pattern": "^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*|[0-9A-Fa-f:.]+)$"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "server"
+                }
+              },
+              "required": ["type"]
+            },
+            "then": {
+              "properties": {
+                "default": {
+                  "$ref": "#/$defs/host_name"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "provides": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "enum": ["send_target", "import_source", "reading_sync", "book_info", "device_profiles", "book_action", "list_export", "list_import"]
+          }
+        },
+        "required": ["type"],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "send_target"
+                }
+              },
+              "required": ["type"]
+            },
+            "then": {
+              "$ref": "#/$defs/provides_send_target"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "import_source"
+                }
+              },
+              "required": ["type"]
+            },
+            "then": {
+              "$ref": "#/$defs/provides_import_source"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "reading_sync"
+                }
+              },
+              "required": ["type"]
+            },
+            "then": {
+              "$ref": "#/$defs/provides_reading_sync"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "book_info"
+                }
+              },
+              "required": ["type"]
+            },
+            "then": {
+              "$ref": "#/$defs/provides_book_info"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "device_profiles"
+                }
+              },
+              "required": ["type"]
+            },
+            "then": {
+              "$ref": "#/$defs/provides_device_profiles"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "book_action"
+                }
+              },
+              "required": ["type"]
+            },
+            "then": {
+              "$ref": "#/$defs/provides_book_action"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "list_export"
+                }
+              },
+              "required": ["type"]
+            },
+            "then": {
+              "$ref": "#/$defs/provides_list_export"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "list_import"
+                }
+              },
+              "required": ["type"]
+            },
+            "then": {
+              "$ref": "#/$defs/provides_list_import"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "required": ["schema", "id", "version", "api", "min_app", "name", "summary", "category", "author", "license", "permissions", "privacy", "provides"],
+  "additionalProperties": false,
+  "x-koona-rules": [
+    "The app's own check is the final word: a manifest that passes this schema can still be refused, and the app names the field and the reason.",
+    "The file is UTF-8, 64 KiB at most, and names no key twice in any object.",
+    "A whole number is written as one: 1.0 and 1e0 are refused.",
+    "A text has no space of any kind at either end, and no invisible character in it (a bidi control, a zero-width character, a soft hyphen); a zero-width joiner is taken only inside a word of a script that is spelled with it.",
+    "A text a person reads (a name, a summary, the author's name, a device, works_with.needs, tested.on) holds a letter or a digit.",
+    "An id under app.koona is Koona's own and is refused for anyone else, and so is the id of an add-on that comes with the app.",
+    "The name, in every language, and the author's name may not say \"Koona\" in any spelling.",
+    "Each number of a version fits 64 bits.",
+    "tested.date is a day that exists: 29 February only in a leap year.",
+    "An address (homepage, source, support, author.url, the sign-in's) is https, with a host, with no user name or password, and 300 characters at most as a browser writes it back.",
+    "The sign-in's authorize, token and revoke addresses have no port and lead to an internet name; token and revoke are under the issuer.",
+    "The host of the sign-in's issuer is one that a pattern of permissions.network.hosts matches.",
+    "A sign-in's client_id is your own: one that an add-on of Koona's uses is refused.",
+    "Every entry of provides is of the manifest's category: send_target and device_profiles are send, import_source is import, reading_sync is sync, book_info is info, book_action, list_export and list_import are tools.",
+    "An id of provides is unique among the entries of its type; a setting's key is unique; there is one device_profiles entry at most.",
+    "Each entry needs its permission: a send target network.local_device; an import source network.hosts or network.named_server; a reading sync reading_state; book information book_query and network.hosts; a book action and a list exporter book_details; a link action also links; a list importer reading_state, and each of its extensions in input_file.",
+    "A permission that no entry uses is refused: local_device without a send target; named_server without a reading sync or an import source; pace without a reading sync, book information or an import source, or without hosts or named_server; sign_in without a reading sync; reading_state without a reading sync, a list exporter or a list importer; input_file without a list importer; book_query without book information; book_details without a book action or a list exporter; links without a link action.",
+    "A flag set to false asks for nothing and is the same as leaving it out; only true is held to these rules.",
+    "A tools add-on has no network, secrets, sign_in, book_query or settings. An add-on with a send target has no network.hosts, named_server, pace, secrets or sign_in. One that holds only reader profiles has no network, secrets or settings. One with book information has no secrets and no settings.",
+    "network.local_device needs exactly one setting of the type host, and network.named_server exactly one of the type server; a host setting needs local_device, a server setting named_server, a secret setting permissions.secrets.",
+    "A host setting's default is a name or an IPv4 or IPv6 address of a device on the person's network: never this computer, an address on the internet or one of Koona's.",
+    "A role is used once: folder on a text setting of a send target (its default is a path on a reader, such as /Books); user on a text setting and password on a secret setting of an import source or a reading sync; a password needs a user.",
+    "privacy.sends holds reading_state_to_service when the add-on has reading_state and reaches the internet or a named server, book_details_to_service when it has book_query and reaches them, searches_to_service when it has an import source and reaches them, book_details_in_links when it has a link action; and no code its permissions do not back (book_files_to_your_device needs network.local_device).",
+    "privacy.collects holds account when the add-on has sign_in.",
+    "A link action's host is one that a pattern of permissions.links.hosts matches.",
+    "A device_profiles entry's readers are the ids of the profiles in its data file: every one and no other.",
+    "Every file the manifest names (entry, data) is in the package, and the package keeps its own limits and words (locales/en.json with a label for every action, exporter, importer and setting).",
+    "The checked list takes a license only when it is exactly one of checked-licenses.json, with its text in LICENSE.md.",
+    "On the checked list, a name does not read the same as the name of an add-on that comes with the app, or of another add-on on the list.",
+    "A manifest written for a later Koona Books is not wrong: one whose schema is above 1 or whose api is above 1, or whose min_app is above the app that reads it, is answered \"needs a newer Koona Books\". This schema is for API level 1 and refuses the first two."
+  ],
+  "$defs": {
+    "version": {
+      "description": "A semantic version with no build metadata: 1.0.0, 1.1.0-beta.1",
+      "type": "string",
+      "maxLength": 32,
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-(0|[1-9][0-9]*|[0-9]*[a-z-][0-9a-z-]*)(\\.(0|[1-9][0-9]*|[0-9]*[a-z-][0-9a-z-]*))*)?$"
+    },
+    "carries": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["status", "progress", "finished_at"]
+      }
+    },
+    "entry_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+    },
+    "format": {
+      "description": "A format or a file extension, lower case, no dot",
+      "type": "string",
+      "pattern": "^[a-z0-9]{1,8}$"
+    },
+    "host_list": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/host_pattern"
+      }
+    },
+    "host_name": {
+      "description": "One internet name: api.example.org",
+      "type": "string",
+      "maxLength": 253,
+      "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$",
+      "not": {
+        "anyOf": [
+          {
+            "pattern": "\\.(0x[0-9a-f]*|[0-9]+)$"
+          },
+          {
+            "pattern": "(^|[./])(local|localhost|internal|lan|home\\.arpa)$"
+          },
+          {
+            "pattern": "(^|[./])koona\\.app$"
+          }
+        ]
+      }
+    },
+    "host_pattern": {
+      "description": "An internet name, or every name under one: api.example.org, *.example.org",
+      "type": "string",
+      "pattern": "^(\\*\\.)?[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$",
+      "not": {
+        "anyOf": [
+          {
+            "pattern": "\\.(0x[0-9a-f]*|[0-9]+)$"
+          },
+          {
+            "pattern": "(^|[./])(local|localhost|internal|lan|home\\.arpa)$"
+          },
+          {
+            "pattern": "(^|[./])koona\\.app$"
+          }
+        ]
+      },
+      "if": {
+        "pattern": "^\\*\\."
+      },
+      "then": {
+        "maxLength": 255,
+        "not": {
+          "pattern": "^\\*\\.(co|com|net|org|gov|edu|ac)\\.[a-z]{2}$"
+        }
+      },
+      "else": {
+        "maxLength": 253
+      }
+    },
+    "link": {
+      "description": "An https address",
+      "type": "string",
+      "maxLength": 300,
+      "pattern": "^[Hh][Tt][Tt][Pp][Ss]:[^\\x00-\\x20\\x7f-\\x9f]+$"
+    },
+    "provides_book_action": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entry_id"
+        },
+        "type": {
+          "const": "book_action"
+        },
+        "entry": {
+          "type": "string",
+          "maxLength": 100,
+          "pattern": "^([A-Za-z0-9_-]([A-Za-z0-9._-]*[A-Za-z0-9_-])?/){0,2}[A-Za-z0-9_-][A-Za-z0-9._-]*\\.lua$",
+          "not": {
+            "pattern": "(^|/)([Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(\\.|/|$)"
+          }
+        },
+        "gives": {
+          "enum": ["link", "text"]
+        },
+        "max_books": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "host": {
+          "$ref": "#/$defs/host_name"
+        }
+      },
+      "required": ["type", "id", "entry", "gives"],
+      "additionalProperties": false,
+      "if": {
+        "properties": {
+          "gives": {
+            "const": "link"
+          }
+        },
+        "required": ["gives"]
+      },
+      "then": {
+        "properties": {
+          "max_books": {
+            "const": 1
+          }
+        },
+        "required": ["host"]
+      },
+      "else": {
+        "not": {
+          "required": ["host"]
+        }
+      }
+    },
+    "provides_book_info": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entry_id"
+        },
+        "type": {
+          "const": "book_info"
+        },
+        "entry": {
+          "type": "string",
+          "maxLength": 100,
+          "pattern": "^([A-Za-z0-9_-]([A-Za-z0-9._-]*[A-Za-z0-9_-])?/){0,2}[A-Za-z0-9_-][A-Za-z0-9._-]*\\.lua$",
+          "not": {
+            "pattern": "(^|/)([Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(\\.|/|$)"
+          }
+        },
+        "languages": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 40,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(\\*|[a-z]{2,3}(-[A-Za-z0-9]{2,8}){0,3})$"
+          },
+          "if": {
+            "contains": {
+              "const": "*"
+            }
+          },
+          "then": {
+            "maxItems": 1
+          }
+        },
+        "finds_by": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["isbn", "title_author"]
+          }
+        },
+        "finds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["info", "covers"]
+          }
+        }
+      },
+      "required": ["type", "id", "entry", "languages", "finds_by", "finds"],
+      "additionalProperties": false
+    },
+    "provides_device_profiles": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entry_id"
+        },
+        "type": {
+          "const": "device_profiles"
+        },
+        "data": {
+          "type": "string",
+          "maxLength": 100,
+          "pattern": "^([A-Za-z0-9_-]([A-Za-z0-9._-]*[A-Za-z0-9_-])?/){0,2}[A-Za-z0-9_-][A-Za-z0-9._-]*\\.json$",
+          "not": {
+            "anyOf": [
+              {
+                "pattern": "(^|/)([Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(\\.|/|$)"
+              },
+              {
+                "const": "addon.json"
+              },
+              {
+                "pattern": "^locales/"
+              }
+            ]
+          }
+        },
+        "readers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/entry_id"
+          }
+        }
+      },
+      "required": ["type", "id", "data", "readers"],
+      "additionalProperties": false
+    },
+    "provides_import_source": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entry_id"
+        },
+        "type": {
+          "const": "import_source"
+        },
+        "entry": {
+          "type": "string",
+          "maxLength": 100,
+          "pattern": "^([A-Za-z0-9_-]([A-Za-z0-9._-]*[A-Za-z0-9_-])?/){0,2}[A-Za-z0-9_-][A-Za-z0-9._-]*\\.lua$",
+          "not": {
+            "pattern": "(^|/)([Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(\\.|/|$)"
+          }
+        }
+      },
+      "required": ["type", "id", "entry"],
+      "additionalProperties": false
+    },
+    "provides_list_export": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entry_id"
+        },
+        "type": {
+          "const": "list_export"
+        },
+        "entry": {
+          "type": "string",
+          "maxLength": 100,
+          "pattern": "^([A-Za-z0-9_-]([A-Za-z0-9._-]*[A-Za-z0-9_-])?/){0,2}[A-Za-z0-9_-][A-Za-z0-9._-]*\\.lua$",
+          "not": {
+            "pattern": "(^|/)([Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(\\.|/|$)"
+          }
+        },
+        "extension": {
+          "enum": ["csv", "tsv", "txt", "bib", "ris", "json", "xml", "md"]
+        },
+        "file_name": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_-]([A-Za-z0-9 _-]*[A-Za-z0-9_-])?$",
+          "not": {
+            "pattern": "^([Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])$"
+          }
+        }
+      },
+      "required": ["type", "id", "entry", "extension"],
+      "additionalProperties": false
+    },
+    "provides_list_import": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entry_id"
+        },
+        "type": {
+          "const": "list_import"
+        },
+        "entry": {
+          "type": "string",
+          "maxLength": 100,
+          "pattern": "^([A-Za-z0-9_-]([A-Za-z0-9._-]*[A-Za-z0-9_-])?/){0,2}[A-Za-z0-9_-][A-Za-z0-9._-]*\\.lua$",
+          "not": {
+            "pattern": "(^|/)([Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(\\.|/|$)"
+          }
+        },
+        "carries": {
+          "$ref": "#/$defs/carries"
+        },
+        "extensions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/format"
+          }
+        }
+      },
+      "required": ["type", "id", "entry", "extensions", "carries"],
+      "additionalProperties": false
+    },
+    "provides_reading_sync": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entry_id"
+        },
+        "type": {
+          "const": "reading_sync"
+        },
+        "entry": {
+          "type": "string",
+          "maxLength": 100,
+          "pattern": "^([A-Za-z0-9_-]([A-Za-z0-9._-]*[A-Za-z0-9_-])?/){0,2}[A-Za-z0-9_-][A-Za-z0-9._-]*\\.lua$",
+          "not": {
+            "pattern": "(^|/)([Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(\\.|/|$)"
+          }
+        },
+        "directions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["from", "to"]
+          }
+        },
+        "carries": {
+          "$ref": "#/$defs/carries"
+        },
+        "match_by": {
+          "enum": ["identifiers", "document"]
+        }
+      },
+      "required": ["type", "id", "entry", "directions", "carries"],
+      "additionalProperties": false
+    },
+    "provides_send_target": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entry_id"
+        },
+        "type": {
+          "const": "send_target"
+        },
+        "entry": {
+          "type": "string",
+          "maxLength": 100,
+          "pattern": "^([A-Za-z0-9_-]([A-Za-z0-9._-]*[A-Za-z0-9_-])?/){0,2}[A-Za-z0-9_-][A-Za-z0-9._-]*\\.lua$",
+          "not": {
+            "pattern": "(^|/)([Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(\\.|/|$)"
+          }
+        },
+        "formats": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/format"
+          }
+        },
+        "converts": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/format"
+          }
+        },
+        "max_file_mb": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "can_list": {
+          "type": "boolean"
+        }
+      },
+      "required": ["type", "id", "entry", "formats"],
+      "additionalProperties": false
+    },
+    "sign_in_address": {
+      "description": "An https address with no query and no fragment",
+      "allOf": [
+        {
+          "$ref": "#/$defs/link"
+        },
+        {
+          "not": {
+            "pattern": "[?#]"
+          }
+        }
+      ]
+    }
+  }
+}

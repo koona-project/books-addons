@@ -1,0 +1,7 @@
+{
+  "does": "Speichert die ausgewählten Bücher mit ihrem Lesestand als CSV-Datei, die jede Tabellenkalkulation öffnet. Liest eine solche Datei wieder ein, um Bücher als gelesen oder beendet zu markieren.",
+  "works": "CSV-Dateien: Excel, Numbers, LibreOffice, Google Sheets",
+  "changes": "Erste Version",
+  "export.csv.label": "CSV-Tabelle",
+  "import.csv.label": "Lesestand aus einer CSV-Tabelle"
+}

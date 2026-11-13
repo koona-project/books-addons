@@ -1,0 +1,19 @@
+{
+  "name": "koona-books",
+  "owner": {
+    "name": "Koona",
+    "url": "https://koona.app"
+  },
+  "metadata": {
+    "description": "The agent skill for writing add-ons for Koona Books"
+  },
+  "plugins": [
+    {
+      "name": "koona-books-addons",
+      "description": "Write, fix or review an add-on for Koona Books, the e-book library app: the authors' reference, the nine add-ons that come with the app, five starters and the manifest's schema.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skill/koona-books-addons"]
+    }
+  ]
+}

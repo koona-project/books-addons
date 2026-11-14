@@ -7,7 +7,8 @@ it into your computer's card reader, and send to it as to any e-reader.
 
 - Tells Koona Books what the card of an Xteink X4 running CrossPoint looks like: it has a
   `.crosspoint` folder. Put such a card into the computer and it shows up under Devices by itself.
-- Says what the reader opens: EPUB and TXT. Other books are converted to EPUB by Koona Books first.
+- Says what the reader opens: EPUB and TXT. A book that has only an FB2 file is converted to EPUB by
+  Koona Books first; a book in any other format is not sent to the card, and the plan says why.
 - Puts each book in a folder named after its author.
 - Never touches the `.crosspoint` folder, where the reader keeps its own settings.
 

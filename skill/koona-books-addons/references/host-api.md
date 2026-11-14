@@ -107,15 +107,16 @@ exceptions: the text read and the text written have caps of their own
 
 Some reaches are not a mistake to catch: a request to a host your manifest does not name, a
 request past the number one call may make, `koona.secret.get` without the `secrets` permission.
-The first such reach ends the call at once. `pcall` catches an error, but the call is over all the
-same: every later call into `koona` fails, the script is stopped at its next step, and whatever it
-returns is thrown away. The person sees `denied` (or `not_on_your_network` or `server_moved`, see
+The first such reach ends the call at once, and `pcall` cannot catch it: the error goes on through
+every `pcall` and `xpcall`, every later call into `koona` fails, and whatever the script returns is
+thrown away. The person sees `denied` (or `not_on_your_network` or `server_moved`, see
 [permissions.md](permissions.md)). Your script learns nothing about the rule it broke.
 
 ### Time
 
 Every function of `koona` looks at the call's clock first. Once the call's time is over, each one
-fails, also inside a `pcall`, and the call ends as out of time; the person sees `limits`. The
+fails, `pcall` and `xpcall` hand the error on instead of catching it, and the call ends as out of
+time; the person sees `limits`. The
 call's time includes what the app does for it (a request's wait, parsing), except where this page
 says otherwise.
 

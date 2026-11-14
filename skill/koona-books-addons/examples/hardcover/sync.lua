@@ -295,9 +295,12 @@ local function send(change, remote)
     if text(done.error) then return nil, "refused" end
     at = page
   end
-  -- The day it was finished here, when it is not the day Hardcover just wrote (today).
-  if want == 3 and read and text(change.finished_at) then
-    local day = change.finished_at:sub(1, 10)
+  -- The day it was finished here, when it is not the day Hardcover just wrote (today). The
+  -- person's own calendar day (`finished_on`, worked out by the app in this computer's time
+  -- zone) when the app gives it; else the UTC date of the time.
+  local finished = text(change.finished_on) or (text(change.finished_at) and change.finished_at:sub(1, 10))
+  if want == 3 and read and finished then
+    local day = finished
     if day:match("^%d%d%d%d%-%d%d%-%d%d$") then
       local data, why = ask(SET_FINISHED, { id = read, day = day })
       if not data then return nil, why, true end

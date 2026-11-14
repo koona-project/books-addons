@@ -10,8 +10,8 @@ An add-on is a folder of plain text files: a manifest (`addon.json`), one or mor
 `locales/`. There is nothing to compile and nothing to install to write one.
 
 These pages, the examples and the starters have their public home at https://addons.koona.app/books/docs/.
-Add-ons that other people made are listed at https://addme.dev/books/, and that is where one is submitted for Koona's
-checked list ([checking.md](checking.md)).
+Add-ons that other people made are listed at https://addme.dev/books/, and one is submitted for Koona's checked list
+with the form at https://addme.dev/books/submit ([checking.md](checking.md)).
 
 ## What an add-on can add
 
@@ -62,6 +62,9 @@ Read this before you plan an add-on. Each of these is how the app is today, and 
 - **A reading sync by identifiers pairs books only by ISBN** (and Hardcover's own ids). Another
   service's own ids pair nothing; a row with one is kept and may be offered as "Looks the same"
   ([reading-sync.md](reading-sync.md#two-ways-of-knowing-a-book)).
+- **A source of book information cannot hold an API key**: it may have no settings and no secrets,
+  so a catalog that needs a key of the person's cannot be one today
+  ([book-info.md](book-info.md)).
 - **A catalog at listed hosts has no form**: its settings and secrets are never asked, and it is shown
   under the add-on's name ([import-source.md](import-source.md#what-a-catalog-cannot-do)).
 - **A catalog whose file links need a token, a header or a cookie cannot work**: the app downloads, and
@@ -96,7 +99,8 @@ my-addon/
 
 A package holds only `.lua`, `.json` and `.md` files, as UTF-8 text with no byte-order mark. Any other
 file in the folder (a picture, a `.gitignore`, a hidden file) makes the app refuse it, so keep the add-on
-in a folder of its own.
+in a folder of its own. That folder may be the root of a git repository: git's own `.git` there is the
+one name the app passes over.
 
 A script file returns a table of functions. The app calls the function its kind names (`check`, `send`,
 `pull`, `run`...) with a `ctx` table and the call's own arguments, and reads the table the function
@@ -141,9 +145,24 @@ return actions
    ([words.md](words.md)).
 4. **Load the folder in Koona Books** (Add-ons, "Add-ons from a file", "Load a folder"), run the thing
    you added, and read its log. Edit, load the folder again, repeat ([testing.md](testing.md)).
-5. **Share it.** Zip the files, with `addon.json` at the top of the zip and not inside a folder, and
-   name the zip `<something>.kbooksaddon`. Anyone can add that file in their own Koona Books. Or ask
-   Koona to check it and list it for everyone ([checking.md](checking.md)).
+5. **Share it.** Zip the folder's contents, not the folder: `addon.json` at the top of the zip, and
+   no hidden file (`.DS_Store`, `.git`) and no `__MACOSX` folder in it, since the app refuses a name
+   that starts with a dot ([testing.md](testing.md)). Name the zip `<something>.kbooksaddon`. The
+   Finder's and Explorer's "Compress" zip the folder itself, so use this command instead, from the
+   folder that holds your add-on's folder `my-addon`. On macOS, in Terminal:
+
+   ```sh
+   cd my-addon && zip -r -X ../my-addon.kbooksaddon . -x '.*' '*/.*' '__MACOSX/*' && cd ..
+   ```
+
+   On Windows 10 or 11, in PowerShell (its `tar` makes zips too):
+
+   ```powershell
+   tar --format zip -cf my-addon.kbooksaddon --exclude '.?*' --exclude '__MACOSX' -s ',^\./,,' -s ',^\.$,,' -C my-addon .
+   ```
+
+   Anyone can add that file in their own Koona Books. Or ask Koona to check it and list it for
+   everyone ([checking.md](checking.md)).
 
 ## The pages
 

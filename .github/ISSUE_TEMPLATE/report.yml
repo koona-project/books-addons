@@ -1,0 +1,26 @@
+name: Report a fault
+description: A fault in an example, a starter, the agent skill or the pages for authors
+title: "<what is wrong, in a few words>"
+labels: ["report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a fault in what this repository holds: an example, a starter, the agent skill, or the pages for authors at https://addons.koona.app/books/docs/.
+        Those are a copy of what Koona Books publishes, so a fault is mended there and copied here again; nothing here is changed by a pull request.
+        To offer an add-on of your own for Koona's checked list, use the form "Offer an add-on" (or https://addme.dev/books/submit) instead. This issue is public: write no secret into it.
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: The file, or the page's address
+      placeholder: starters/send/send.lua, or https://addons.koona.app/books/docs/manifest
+    validations:
+      required: true
+  - type: textarea
+    id: fault
+    attributes:
+      label: What is wrong
+      description: What it says or does, and what you expected instead. With the version of Koona Books, when the fault shows in the app
+    validations:
+      required: true

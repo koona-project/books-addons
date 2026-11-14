@@ -8,6 +8,7 @@ body:
       value: |
         The form at https://addme.dev/books/submit fills this in for you and checks the simple things first.
         A person at Koona reads the add-on's code at the commit below before anything is signed. This issue is public.
+        To report a fault in an example, a starter, the skill or the pages for authors, use the form "Report a fault" instead.
   - type: textarea
     id: what
     attributes:
@@ -27,7 +28,7 @@ body:
     id: folder
     attributes:
       label: Folder
-      description: The folder that holds addon.json. Leave empty when it is at the top of the repository
+      description: The folder that holds addon.json, as a path in the repository (my-addon, or addons/my-addon). Leave it empty when addon.json is at the top of the repository, rather than writing . or /
     validations:
       required: false
   - type: input
@@ -69,6 +70,7 @@ body:
     id: agree
     attributes:
       label: Before you submit
+      description: Ticking this box is not the author's agreement. That is agreed to in writing, as a comment on this issue, before anything is signed.
       options:
-        - label: I wrote this add-on or may offer it, and its license text is in its folder as LICENSE.md
+        - label: I will agree to the author's agreement (https://addons.koona.app/books/docs/checking#what-you-agree-to) in a comment on this issue, and the add-on's license text is in its folder as LICENSE.md
           required: true

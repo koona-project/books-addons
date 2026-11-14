@@ -1,0 +1,8 @@
+{
+  "about": "Where Koona Books looks for newer versions of its add-ons, and the public keys the add-on index is signed with (Ed25519, raw 32 bytes in base64; public, not secret). These are the index's own keys: never the licence service's (licence-keys.json) and never the app updater's. The app holds the current key and the next one, so a key can be replaced without waiting for a release. With no key here the app never asks the server: nothing could be verified. Private keys never come near this repository: the owner's board makes them, the everyday one into the owner's computer's password store and a spare kept off the computer.",
+  "url": "https://addons.koona.app/books/v1/",
+  "keys": [
+    "Kckznq++fLaYg13+lgg9nXf9t9OXI4CI0HyO/xiJwdM=",
+    "6xV/ESk8j/UUWGhYOjgqE2Gh+Jr/CfKjEQoRikfg4Ac="
+  ]
+}

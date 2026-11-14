@@ -13,10 +13,12 @@ cable.
 
 ## What it does
 
-- Sends EPUB and TXT files as they are. Other books are converted to EPUB by Koona Books first.
+- Sends EPUB and TXT files as they are. A book that has only an FB2 file is converted to EPUB by Koona
+  Books first; a book in any other format is not sent to this reader, and the plan says why.
 - Puts books into the folder you name (`/Books` unless you change it) and makes the folder when it is
   not there.
-- Never replaces a book on the reader unless you say so.
+- Never writes over another book on the reader: when a book of the same name is there, yours goes
+  beside it (`Dune (2).epub`). Only Koona Books' own earlier copy of the same book is replaced.
 
 ## What it may do
 

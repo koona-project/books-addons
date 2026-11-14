@@ -50,15 +50,16 @@ The agent picks the skill up by itself and writes the add-on's folder. It cannot
 | [`examples/`](examples) | The nine add-ons that come with Koona Books, as the app ships them. Read them as models; do not copy one: its `id`, `name` and `author` are Koona's, and an add-on that keeps them is refused |
 | [`starters/`](starters) | One small working add-on for each category (`send`, `import`, `sync`, `info`, `tools`). Copy a folder, rename it, and make it yours |
 | [`skill/koona-books-addons/`](skill/koona-books-addons) | The agent skill, whole: its instructions, the authors' pages, the examples, the starters and the schema, in one folder that works on its own |
-| Issues | Each open issue offers one add-on, in its author's own repository, for Koona's checked list |
+| Issues | An open issue labeled `submission` offers one add-on, in its author's own repository, for Koona's checked list; one labeled `report` reports a fault in what this repository holds |
 
-The folders are a copy and are not edited here: [SOURCE.md](SOURCE.md) says which state of Koona Books they are. A pull request that changes them cannot be taken; a fault in one is best reported as an issue.
+The folders are a copy and are not edited here: [SOURCE.md](SOURCE.md) says which state of Koona Books they are. A pull request that changes them cannot be taken. A fault in one is reported with the issue form "Report a fault", never with the form that offers an add-on: an issue made by that form is read as an offer.
 
 ## Offer an add-on for the checked list
 
-1. **You offer it.** The form at <https://addme.dev/books/submit> asks what the add-on does and where it is on GitHub. It checks, straight from GitHub, that the repository is public, that `addon.json` is there and passes the manifest's rules, and that the license is one the list takes. Then it opens a new issue here, filled in, and you press GitHub's own button. You can also open the issue by hand with the "Offer an add-on" form.
-2. **A person at Koona reads it.** The check on the page is a courtesy and decides nothing. A reviewer reads every line of the add-on at the commit the issue names, against [what the checked list asks](https://addons.koona.app/books/docs/checking), and answers in the issue: questions, things to change, or a yes. Commits made after the one named are not part of the review; a changed add-on is a new commit to name.
-3. **After a yes**, Koona signs that version. It then appears in Koona Books under Find add-ons, and in the list at <https://addme.dev/books/>. A later version is offered the same way and read again.
+1. **You offer it.** The form at <https://addme.dev/books/submit> asks what the add-on does and where it is on GitHub. It checks, straight from GitHub, that the repository is public, that `addon.json` is there and passes the manifest's rules, that it holds none of a starter's placeholders, and that the license is one the list takes and its text is filled in. Then it opens a new issue here, filled in, and you press GitHub's own button. You can also open the issue by hand with the "Offer an add-on" form.
+2. **You agree to the author's agreement**, in writing, as a comment on that issue that quotes it: [what you agree to](https://addons.koona.app/books/docs/checking#what-you-agree-to). It is a draft a lawyer has not yet read, and its final words may differ. The box ticked in the issue form says you will; it is not the agreement.
+3. **A person at Koona reads it.** The check on the page is a courtesy and decides nothing. A reviewer reads every line of the add-on at the commit the issue names, against [what the checked list asks](https://addons.koona.app/books/docs/checking), and answers in the issue: questions, things to change, or a yes. Commits made after the one named are not part of the review; a changed add-on is a new commit to name.
+4. **After a yes**, Koona signs that version. It then appears in Koona Books under Find add-ons, and in the list at <https://addme.dev/books/>. A later version is offered the same way and read again.
 
 A no is possible, and so is a withdrawal later: Koona can take a checked add-on off the list, by id and version.
 

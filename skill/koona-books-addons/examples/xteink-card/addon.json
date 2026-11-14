@@ -17,7 +17,6 @@
   "works_with": { "devices": ["Xteink X4"], "needs": "CrossPoint on the reader" },
   "permissions": {},
   "privacy": { "sends": [], "collects": [] },
-  "tested": { "on": "the app's own tests; not yet with a reader's card in a computer", "date": "2026-11-12" },
   "provides": [
     { "type": "device_profiles", "id": "xteink", "data": "profiles.json", "readers": ["x4"] }
   ]

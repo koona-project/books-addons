@@ -20,7 +20,6 @@
     "input_file": ["csv"]
   },
   "privacy": { "sends": [], "collects": [] },
-  "tested": { "on": "the app's own tests: a list written and read back", "date": "2026-11-12" },
   "provides": [
     { "type": "list_export", "id": "csv", "entry": "list.lua", "extension": "csv", "file_name": "books" },
     { "type": "list_import", "id": "csv", "entry": "list.lua", "extensions": ["csv"],

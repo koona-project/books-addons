@@ -26,9 +26,11 @@ It never writes to your folder, and what runs afterwards is the app's own copy o
 the folder as you like; the add-on changes only when you read it again.
 
 Every file in the folder, at any depth, must be one the app allows. **A file it does not allow is
-refused, not skipped**, so the add-on must sit in a folder of its own. In a repository, keep it in a
-subfolder (`addon/`, say) and pick that one, not the repository's root: the root's `.git` folder,
-`.gitignore` or any other dotfile makes the app refuse the whole folder.
+refused, not skipped**, so the add-on must sit in a folder of its own. One name is passed over: git's
+own `.git` at the root of the folder you pick, so the add-on may be the root of its repository. Nothing
+else is: a `.gitignore`, a `.gitattributes`, a `.github` folder or any other dotfile makes the app refuse
+the whole folder. If the repository needs one of those, keep the add-on in a subfolder (`addon/`, say)
+and pick that one.
 
 What a file needs to be allowed:
 
@@ -36,7 +38,8 @@ What a file needs to be allowed:
   extension, no `.txt`. `README.md`, `CHANGELOG.md` and `LICENSE.md` are allowed; the app does nothing
   with them but check them as text.
 - **Each part of its path** is made of the letters `A`–`Z` and `a`–`z`, digits, `.`, `_` and `-`, and
-  does not start or end with a dot. So a hidden file or folder (`.git`, `.DS_Store`) is refused. A part
+  does not start or end with a dot. So a hidden file or folder (`.gitignore`, `.DS_Store`, a `.git`
+  below the root) is refused. A part
   may not be a Windows device name (`con`, `prn`, `aux`, `nul`, `com1` to `com9`, `lpt1` to `lpt9`),
   with or without an extension.
 - **A path is not too long and not too deep.** The same caps as a file the manifest names hold for every
@@ -94,9 +97,11 @@ line. The version and the license are in the footer. **Cancel** has the focus.
 
 On **Install**, before anything is kept, the app tries each of your scripts once in the sandbox, with
 no permission at all, no settings and a short time. A script that does not compile, raises an error at
-its top level, reaches for the network there or does not come back is refused as `does_not_start`. So
-keep the top level of an entry file to defining functions and returning their table; do the work
-inside the functions.
+its top level, reaches for the network there or does not come back is refused as `does_not_start`.
+The dialog names the entry file that failed and, when there is one, the compiler's or your script's
+error with its line (`main.lua: syntax error: addon:2: Expected identifier when parsing expression,
+got '='`; the line is counted in that file, whatever it says before the number). So keep the top level
+of an entry file to defining functions and returning their table; do the work inside the functions.
 
 Once installed:
 
@@ -142,7 +147,11 @@ the package's own spelling (cleaned of invisible characters and cut short):
   in [manifest.md](manifest.md);
 - the locale file, and the key when there is one (`locales/en.json: setting.server`), for `words`;
 - the version of Koona Books the manifest asks for (`min_app`), or `schema` and its number, for
-  `newer_app`.
+  `newer_app`;
+- the entry file that does not start, and after it the compiler's or the script's error when there
+  is one, for `does_not_start`. This one is cut as a line of the log is (1,000 characters), not
+  short. A script that ran out of time or memory, or reached for the network at its top, said nothing
+  of its own: only the file is named.
 
 These are every code and what the person reads. A detail stands where the words say _detail_:
 
@@ -167,7 +176,7 @@ These are every code and what the person reads. A detail stands where the words 
 | `client_taken` | It would sign you in as Koona Books. An add-on from a file signs in under a name of its own. |
 | `nothing_to_run` | This version of Koona Books has no use for what it adds. |
 | `same_version` | This version is already installed, with other contents. A changed add-on needs a new version number. |
-| `does_not_start` | Its script does not start. |
+| `does_not_start` | Its script does not start. _detail_ |
 | `not_kept` | It could not be saved on this computer. |
 | `not_read` | It could not be read. It may have been moved or removed. |
 | `changed` | Something changed while you were reading. Choose the file again. |
@@ -219,15 +228,15 @@ how the log words them:
 | --- | --- |
 | `job.began:send` | Sending a book began |
 | `job.began:check` | Testing the connection began |
-| `job.began:list` | Reading the folder |
-| `job.began:sync` | Syncing reading |
-| `job.began:browse` | Shown as the code itself |
-| `job.began:search` | Shown as the code itself |
-| `job.began:info` | Shown as the code itself |
-| `job.began:covers` | Shown as the code itself |
-| `job.began:action` | Shown as the code itself |
-| `job.began:export` | Shown as the code itself |
-| `job.began:import` | Shown as the code itself |
+| `job.began:list` | Reading the folder began |
+| `job.began:sync` | Syncing reading began |
+| `job.began:browse` | Opening a catalog began |
+| `job.began:search` | Searching a catalog began |
+| `job.began:info` | Finding book information began |
+| `job.began:covers` | Finding a cover began |
+| `job.began:action` | An action from the book’s menu began |
+| `job.began:export` | Saving a book list began |
+| `job.began:import` | Reading from a file began |
 | `job.ended:ok` | It ended: done |
 | `job.ended:cancelled` | It ended: it was stopped |
 | `job.ended:broken` | It ended: the script stopped with an error |

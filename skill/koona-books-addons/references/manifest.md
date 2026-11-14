@@ -13,7 +13,8 @@ The file is read strictly:
 - A field that asks for something no part of the add-on would use is refused. A permission is never
   "just in case".
 
-When a manifest is refused, the app names the field and the reason (see [testing.md](testing.md)).
+When a manifest is refused, the app names the field, not what is wrong with it (see
+[testing.md](testing.md)): read that field's rules on this page.
 
 ## A whole manifest
 
@@ -188,6 +189,24 @@ something on a home network (`.local`, `.lan`, `.internal`, `.home.arpa`, `local
 is followed only to a host in the list, and a link the app fetches for the add-on (a cover, a book's
 file) is fetched only from a host in the list.
 
+What the app takes for a public suffix is a list of its own, not the whole Public Suffix List. A
+`*.` pattern is refused over one of these labels and a two-letter country name (`*.co.uk`,
+`*.ne.jp`, `*.gob.mx`):
+
+<!-- generated:public-suffixes-country -->
+`ac`, `ad`, `biz`, `co`, `com`, `ed`, `edu`, `gen`, `go`, `gob`, `gov`, `gr`, `info`, `int`, `lg`, `ltd`, `me`, `mil`, `ne`, `net`, `nom`, `or`, `org`, `plc`, `sch`
+<!-- /generated -->
+
+and over one of these names, where a hosting, pages, storage or tunnel service gives each of its
+customers a name of their own:
+
+<!-- generated:public-suffixes-shared -->
+`github.io`, `gitlab.io`, `bitbucket.io`, `codeberg.page`, `pages.dev`, `netlify.app`, `vercel.app`, `now.sh`, `surge.sh`, `web.app`, `firebaseapp.com`, `readthedocs.io`, `neocities.org`, `blogspot.com`, `wordpress.com`, `tumblr.com`, `wixsite.com`, `weebly.com`, `myshopify.com`, `carrd.co`, `herokuapp.com`, `appspot.com`, `workers.dev`, `deno.dev`, `fly.dev`, `onrender.com`, `railway.app`, `up.railway.app`, `glitch.me`, `repl.co`, `replit.app`, `replit.dev`, `pythonanywhere.com`, `azurewebsites.net`, `azurestaticapps.net`, `cloudapp.net`, `elasticbeanstalk.com`, `ondigitalocean.app`, `cloudfunctions.net`, `run.app`, `supabase.co`, `firebaseio.com`, `amazonaws.com`, `s3.amazonaws.com`, `cloudfront.net`, `blob.core.windows.net`, `web.core.windows.net`, `azureedge.net`, `storage.googleapis.com`, `googleusercontent.com`, `githubusercontent.com`, `digitaloceanspaces.com`, `r2.dev`, `b-cdn.net`, `ngrok.io`, `ngrok.app`, `ngrok-free.app`, `trycloudflare.com`, `loca.lt`, `duckdns.org`, `dyndns.org`, `ddns.net`, `no-ip.org`, `hopto.org`
+<!-- /generated -->
+
+A name under one of them is a host like any other: `myapp.github.io` and `*.myapp.github.io` are
+taken.
+
 <!-- object:permissions.network.local_device -->
 
 | Key | Value | What it is |
@@ -303,16 +322,10 @@ have no settings: `settings` is refused there, and `ctx.settings` is an empty ta
 
 ## What it adds: `provides`
 
-Each entry has a `type` and an `id`. The `id` is `a-z`, `0-9`, `_` and `-`, starting with a letter, 32
-characters at most, and unique among the entries of its type.
-
-**Do not put a `-` in an `id`.** The manifest takes it, but the locale keys made from the id
-(`target.<id>.add`, `source.<id>.how`, `sync.<id>.setup`, `action.<id>.label`, `export.<id>.label`,
-`import.<id>.label`) may not hold one, so such an entry can never be worded. For a book action, a list
-exporter and a list importer, whose label is required, the package is then refused whatever you do;
-for a send target, an import source and a reading sync, the app's own words always show instead of
-yours ([words.md](words.md)). Every entry but reader profiles names its
-script as `entry`; reader profiles name a data file as `data`.
+Each entry has a `type` and an `id`. The `id` is `a-z`, `0-9` and `_`, starting with a letter, 32
+characters at most, and unique among the entries of its type. (No `-`: the id is part of the entry's
+locale keys, such as `target.<id>.add`, and a locale key holds none.) Every entry but reader profiles
+names its script as `entry`; reader profiles name a data file as `data`.
 
 <!-- generated:kinds -->
 | `type` | `category` |
@@ -540,7 +553,7 @@ The rules of this page are also given as data, written from the app's own check:
   takes ([checking.md](checking.md)), as a list of SPDX names.
 
 They are for tools. An editor that knows the schema marks a mistyped key or a wrong value while you
-write. The form an add-on is submitted through (https://addme.dev/books/) checks the manifest with it before the
+write. The form an add-on is submitted through (https://addme.dev/books/submit) checks the manifest with it before the
 form can be sent.
 
 Tell your editor about the schema in the editor's own settings (in VS Code, the setting `json.schemas`,
@@ -556,11 +569,27 @@ for one API level (its `x-koona-api`): a manifest written for a later level is r
 the app's own answer to such a manifest is "needs a newer Koona Books", not "wrong".
 
 **The app's own check is the final word.** A manifest that passes the schema can still be refused when
-the folder is loaded, and the app then names the field and the reason ([testing.md](testing.md)). The
+the folder is loaded, and the app then names the field ([testing.md](testing.md)). The
 other way round should not happen: the schema is written to refuse nothing the app takes, and it is
 tried against the app's own check on many thousands of manifests. If it ever refuses a manifest that
 the app loads, the schema is at fault, not your manifest: report it in the repository
 `koona-project/books-addons`.
+
+### More data for tools and sites
+
+The same folder holds what the sites around the checked list need from the app, each written by the
+app's own code, so that they cannot drift from it:
+
+- [`../schema/review-rules.json`](../schema/review-rules.json): what the review of an offer refuses
+  that a form can see before it is sent: a starter's id, author and example hosts, and the rules of
+  `LICENSE.md` ([checking.md](checking.md)).
+- [`../schema/submission.json`](../schema/submission.json): the offer's form as Koona reads the issue
+  it files: the repository, the label, and the shape of each field.
+- [`../schema/addons-keys.json`](../schema/addons-keys.json): the app's key file as it is, the address
+  apps read the checked list from and the public keys they accept its signature by.
+- [`../schema/index-samples/`](../schema/index-samples/samples.json): small indexes of the checked
+  list in the real format, each beside what an app lists from it, for the tests of a tool that reads
+  the index.
 
 ## What can change later
 

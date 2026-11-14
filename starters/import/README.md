@@ -1,7 +1,7 @@
 # Import starter
 
 A small add-on of the category `import` to copy and rename. It adds one catalog to Add books (From
-a catalogue, as the app labels it): the Example catalog at `api.example.org`, a made-up service that
+a catalog, as the app labels it): the Example catalog at `api.example.org`, a made-up service that
 answers JSON.
 
 - **Browse**: the catalog's start, its shelves, and its books, a page at a time.

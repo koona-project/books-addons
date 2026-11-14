@@ -16,7 +16,6 @@
   "license": "MIT",
   "permissions": { "book_details": true },
   "privacy": { "sends": [], "collects": [] },
-  "tested": { "on": "the app's own tests: Russian and English books, BibTeX's own characters", "date": "2026-11-12" },
   "provides": [
     { "type": "book_action", "id": "cite", "entry": "cite.lua", "gives": "text", "max_books": 100 },
     { "type": "list_export", "id": "bibtex", "entry": "cite.lua", "extension": "bib", "file_name": "books" }

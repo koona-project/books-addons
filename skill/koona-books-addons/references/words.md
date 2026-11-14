@@ -79,13 +79,6 @@ texts; any other language of yours is never shown yet. Write `en` first. Other l
 `<id>` is the `id` of an entry of `provides`; `<key>` is the `key` of a setting; `<code>` is a failure
 code.
 
-**An `id` with a hyphen can never be worded.** The manifest takes a `provides` id with a `-`
-(`my-reader`), but a locale key may not hold one, so a file with `target.my-reader.add` in it is
-refused. For a book action, a list exporter and a list importer, whose label is required, the package
-is then refused either way. For a send target, an import source and a reading sync, whose keys are
-optional, the app's words and the add-on's name always show in their place. Write ids with lower-case
-letters, digits and `_` only.
-
 | Key | Where it shows | Without it |
 | --- | --- | --- |
 | `does` | The row **What it does** on the add-on's page | No such row |
@@ -224,6 +217,7 @@ person sees when the add-on is `broken`, ran out of `limits` or was `denied` whi
 | `limits` | The add-on did more than it may in one sync and was stopped. Nothing more was changed. |
 | `broken` | The add-on stopped with an error. Nothing was changed. |
 | `incomplete` | _service_ did not send everything: only what came is shown |
+| `keychain` | Koona Books couldn’t use the system keychain. Unlock it and try again. |
 | Any other code | The add-on could not do this. Nothing was changed. |
 
 **A reading sync: the server's form**
@@ -246,6 +240,7 @@ person sees when the add-on is `broken`, ran out of `limits` or was `denied` whi
 | `not_set_up` | The add-on could not sign in at this server |
 | `no_secret` | Type the password: none is kept yet |
 | `no_user` | Type the user name |
+| `keychain` | Koona Books couldn’t use the system keychain. Unlock it and try again. |
 | Any other code | The add-on could not do this |
 
 **A reading sync: one change that was not sent**

@@ -110,7 +110,7 @@ local function body_of(change)
   return {
     state = STATE[change.status],
     percent = change.progress and math.floor(change.progress * 100 + 0.5) or nil,
-    finished_on = change.finished_at and change.finished_at:sub(1, 10) or nil,
+    finished_on = change.finished_on or (change.finished_at and change.finished_at:sub(1, 10)) or nil,
   }
 end
 

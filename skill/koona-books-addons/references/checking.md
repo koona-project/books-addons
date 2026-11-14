@@ -24,7 +24,12 @@ The add-on must load as any add-on does ([testing.md](testing.md)), and also:
    with the app.
 2. **Neither its `name` (in any language) nor `author.name` says "Koona"**, in any spelling.
 3. **Its name does not read the same as the name of an add-on that comes with the app**, or of another
-   add-on on the list.
+   add-on on the list, in any of its languages. "Reads the same" ignores case, spaces and marks, and
+   takes letters drawn alike as one (a Cyrillic `о` is an `o`). The tool compares it with the add-ons
+   that come with the app and with every add-on the checked list shows (`name_listed`); a new
+   version of your own add-on is not compared with itself. This matters because an app that reads
+   the list leaves out, without a word, an add-on whose name reads the same as one listed before it.
+   Look at the list (https://addme.dev/books/) before you choose a name.
 4. **It signs in under its own `client_id`**, never one that an add-on of Koona's uses.
 5. **Its `license` is exactly one of these**, spelled exactly so. A choice such as `MIT OR Apache-2.0`,
    a custom license, a copyleft license (GPL, AGPL, LGPL, MPL) and a public-domain dedication are not
@@ -57,11 +62,23 @@ fill them in, or replace the file with your license's text.
    file for the `koona.` names it uses; a name that is no function of `koona` (`api_unknown`), or one
    of a higher level than the manifest's `api` (`api_above_level`), is a problem to fix
    ([host-api.md](host-api.md#the-api-level-koonaapi)).
+9. **Every script starts.** Each entry file is compiled and its top run once, as an install does
+   ([testing.md](testing.md)); one that does not start (`does_not_start`) would be refused by every
+   app.
+10. **Nothing of a starter is left in `addon.json`.** Its `id` is not under `org.example.`,
+    `com.example.` or `net.example.` (`placeholder_id`): an id is the add-on's for good, and two
+    authors who kept a starter's id would be one add-on to every app. `author.name` is not
+    `Your Name` (`placeholder_author`). No host it names (in `permissions.network.hosts`,
+    `permissions.links.hosts`, a book action's `host`, the sign-in's addresses, `homepage`,
+    `source`, `support`, `author.url`) is `example.com`, `example.net` or `example.org`, under one
+    of them, or under `.example`, `.test`, `.invalid` or `localhost` (`placeholder_host`): those
+    are reserved for examples, and nobody's service is there.
 
 An author cannot run this tool today. Loading the add-on from a folder checks the package and the
-manifest, and rules 1, 2 and 4, and writes a warning line in the add-on's log for each name rule 8
+manifest and rules 1, 2 and 4, holds it to rule 9 when you install it, and writes a warning line in the add-on's log for each name rule 8
 finds ([testing.md](testing.md#the-api-check)); it does not check rule 3 against the list, or rules 5
-to 7. Check those by hand against this page.
+to 7 and 10 (a starter loads as it is, so that you can try it before you rename it). Check those by
+hand against this page.
 
 ### What a person reads for
 
@@ -89,7 +106,7 @@ The sandbox already holds an add-on to its permissions. The review is for what t
 
 ## How to submit
 
-There is no way to submit from inside the app. Submit the add-on at https://addme.dev/books/.
+There is no way to submit from inside the app. Submit the add-on with the form at https://addme.dev/books/submit.
 
 The form there is not an upload. It asks what the add-on does and for the GitHub address of its
 repository. It checks that the repository is there and that its `addon.json` passes the manifest's
@@ -105,8 +122,10 @@ The reviewer needs all of this, in the form or in the issue:
 - the address of a **public repository** and the **commit** to check. Not a `.kbooksaddon` file: the
   package is built from the source that was read, so nobody has to trust a file somebody else packed;
 - the folder of the add-on in that repository. The add-on must sit in a folder of its own, holding
-  nothing but the add-on: a package may hold only `.lua`, `.json` and `.md` files, and a repository's own
-  files (`.git`, `.gitignore`) are refused in an add-on's folder ([testing.md](testing.md));
+  nothing but the add-on: a package may hold only `.lua`, `.json` and `.md` files. That folder may be
+  the repository's root (git's own `.git` there is passed over), as long as the repository tracks no
+  other file a package may not hold: a `.gitignore` or a `.github` folder is refused in an add-on's
+  folder ([testing.md](testing.md));
 - the license, as the SPDX name in `addon.json`, and that the code is your own work;
 - what it reaches and why: each host, the sign-in if it has one, each setting;
 - how to try it: a device, a test account, or a server to point it at;

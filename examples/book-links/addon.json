@@ -19,7 +19,6 @@
     "links": { "hosts": ["hardcover.app", "openlibrary.org"] }
   },
   "privacy": { "sends": ["book_details_in_links"], "collects": [] },
-  "tested": { "on": "the app's own tests; the search pages not yet opened by hand", "date": "2026-11-12" },
   "provides": [
     { "type": "book_action", "id": "hardcover", "entry": "links.lua", "gives": "link",
       "host": "hardcover.app" },

@@ -56,11 +56,13 @@ local function trouble(r)
   return { error = type(r.error) == "string" and r.error or "unreachable" }
 end
 
--- Why one request failed in a way that ends the call, or nil when it did not.
+-- Why one request failed in a way that ends the call, or nil when it did not. A server that
+-- fails (5xx) is not asked again for every other book: the call stops there as unreachable.
 local function stop_code(r)
   if r.status == 0 then return trouble(r).error end
   if r.status == 401 or r.status == 403 then return "bad_login" end
   if r.status == 429 then return "limited" end
+  if r.status >= 500 then return "unreachable" end
   return nil
 end
 
@@ -87,7 +89,7 @@ function s.pull(ctx, ask)
       url = ctx.base .. "/syncs/progress/" .. koona.url.encode(book.key),
       headers = headers, timeout = 10,
     }
-    local stop = stop_code(r) or (r.status >= 500 and "unreachable" or nil)
+    local stop = stop_code(r)
     if stop then
       -- A limit after some books were asked about: the rows found so far stand, and the
       -- app asks about the rest later. Anything else, or a limit at the first book, ends

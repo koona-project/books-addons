@@ -62,7 +62,9 @@ Check early that the service can be reached the way an add-on may reach things
 - Answers must be UTF-8 text (JSON, XML, CSV). A script cannot fetch a binary file or parse an HTML page.
 - Signing in is one of: a `secret` setting the script sends itself; a user and a password with roles;
   or OAuth 2 with PKCE that the app runs (`sign_in`). `references/reading-sync.md` says which forms the
-  app can really set up for a sync. A send target has no secret at all (`references/send-target.md`).
+  app can really set up for a sync. A send target has no secret at all (`references/send-target.md`),
+  and neither has a source of book information: it cannot hold an API key, so a catalog that needs
+  one cannot be book information today (`references/book-info.md`).
 - A service that signs in with a login request and a session (a cookie or a token it answers) works
   without `sign_in`: the script reads `set-cookie` or the token from the answer and sends it back
   (`Cookie`, or the service's header) in the same call. Nothing is kept between calls, so every call
@@ -130,7 +132,7 @@ the file; Koona's checked list asks for it, filled in (`references/checking.md`)
 
 ## 6. Check your work against the reference, then hand it over
 
-You cannot run it, so read it once more as the app will:
+Read it once more as the app will:
 
 1. The folder holds only `.lua`, `.json` and `.md` files, UTF-8, no byte-order mark, nothing hidden.
 2. Every key in `addon.json` is in `references/manifest.md`; every `entry` file exists; every entry is of
@@ -140,6 +142,21 @@ You cannot run it, so read it once more as the app will:
 4. Every function the kind's page names exists and returns the shapes that page gives.
 5. Every code the script can answer has `error.<code>` in `locales/en.json`, and none is the app's own.
 6. Every `koona.` name you used is in `references/host-api.md`, called with the arguments it gives.
+
+Reading is not a check that can fail. Until authors have a checker of their own, run what exists,
+when you can run anything, and give the person the rest to run:
+
+1. Validate `addon.json` against `schema/addon.schema.json` with any JSON Schema validator that
+   knows draft 2020-12. A failure there is a failure in the app too; a pass is not the app's
+   word (`x-koona-rules` lists what the schema cannot say).
+2. Compile each entry file with a Luau compiler (`luau-compile` from Luau's releases; the app's
+   scripts are Luau, so a plain Lua compiler is no test). A syntax error there is one the app
+   refuses the add-on for at install.
+3. The app's own answer: load the folder (Add-ons, "Add-ons from a file", "Load a folder") and
+   install it. A refusal shows "This add-on was not installed" with the reason and its detail: the
+   field of `addon.json`, the file, or for a script that does not start the entry file and the
+   compiler's or the script's error (`references/testing.md`). Ask the person for those words when
+   you cannot see them.
 
 Then tell the person, briefly:
 
@@ -156,7 +173,7 @@ folder again.
 
 The same pages have a public home at https://addons.koona.app/books/docs/. Give the person that address when
 they want to read more; work from the copies in `references/`, which are the ones this skill was built
-with. An add-on is submitted for Koona's checked list at https://addme.dev/books/ (`references/checking.md`); that
+with. An add-on is submitted for Koona's checked list at https://addme.dev/books/submit (`references/checking.md`); that
 is the person's to do, not yours.
 
 ## Reference files

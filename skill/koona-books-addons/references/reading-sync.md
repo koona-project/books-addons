@@ -356,7 +356,7 @@ local function body_of(change)
   return {
     state = STATE[change.status],
     percent = change.progress and math.floor(change.progress * 100 + 0.5) or nil,
-    finished_on = change.finished_at and change.finished_at:sub(1, 10) or nil,
+    finished_on = change.finished_on or (change.finished_at and change.finished_at:sub(1, 10)) or nil,
   }
 end
 
@@ -470,13 +470,15 @@ row = { key = "...",                          -- by document: the book asked abo
 push(ctx, changes) -> { results = { result, ... }, stopped = "<code>" or nil }
 change = { key = "...", identifiers = { isbn = { "978..." } }, remote = { ... },
            status = "reading", progress = 0.42,
-           read_at = "2026-11-12T08:00:00Z", finished_at = "2026-11-11T12:00:00Z" }
+           read_at = "2026-11-12T08:00:00Z", finished_at = "2026-11-12T02:00:00Z",
+           finished_on = "2026-11-11" }
 result = { key = "...", remote = { ... }, identifiers = { ... } }   -- a change made
       or { key = "...", error = "<code>" }                           -- a change not made
 ```
 
 - A change's `status` is `reading` or `finished`: the app never sends `unread` or `set_aside`.
-  `progress` is there for a book being read, `finished_at` for a finished one. `remote` is what your
+  `progress` is there for a book being read, `finished_at` and `finished_on` for a finished one.
+  `remote` is what your
   `pull` noted of the book, when it had a row.
 - **A result with a `key` and no `error`** is a change made. Its `remote` replaces the note kept for
   the book. Its `identifiers` are what the book is known by at the service now: by identifiers, write
@@ -497,11 +499,21 @@ shape is no time, and so is a number before 1970. A time in the future is no tim
 
 `read_at` is when the book was read there. It must not be when this computer wrote it there: that
 would look newer than what was read here since. By identifiers the app knows what it last told the
-service of each book, and takes a row that says the same back without its time. By document it does
-not: compare the device the service names with `ctx.client.id`, and leave `read_at` out for a state
-this computer wrote, as the KOReader sync add-on does.
+service of each book, and takes a row that says the same back without its time, as the share it told.
+"The same" is the same status and a share within two percent, or, for a book being read, a row whose
+`remote` is the very note your `push` gave back for it: the app compares the two notes whole and never
+reads them. A service that keeps the place in a coarser unit (pages of a short book) says back a share
+further off than that; keep in the note what you wrote there, in the service's unit (the page sent),
+and the row is still known as the echo. By document it does not: compare the device the service names
+with `ctx.client.id`, and leave `read_at` out for a state this computer wrote, as the KOReader sync
+add-on does.
 
-The times of a change are RFC 3339 in UTC. Take the first ten characters for a day.
+The times of a change are RFC 3339 in UTC. For a service that keeps a day, a finished change also has
+`finished_on` (`YYYY-MM-DD`): the day it was finished by the calendar of the person's computer, in its
+time zone. Send that day, not the first ten characters of `finished_at`: a book finished at 21:00 in
+New York is finished that day, while its UTC time is already the next one. A change may lack
+`finished_on` (an older app, a time it could not place); then the first ten characters of
+`finished_at` are the nearest day there is.
 
 ### Statuses
 
@@ -528,7 +540,8 @@ Pass on the codes `koona.http.request` answers with (`unreachable`, `timeout`, `
 is `broken` ([words.md](words.md)).
 
 The app words a code by who said it. A code the app produced has the app's words, always: here
-`server_moved`, `denied`, `cancelled`, `limits`, `broken`, `incomplete` (a shelf not read to its end)
+`server_moved`, `denied`, `cancelled`, `limits`, `broken`, `incomplete` (a shelf not read to its end),
+`keychain` (this computer's keychain did not give a password or a token the call needed)
 and `no_answer`. A code your script said has your own `error.<code>` first, else the app's words for
 that code when it has some, else the app's one sentence ("The add-on could not do this").
 

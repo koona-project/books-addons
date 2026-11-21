@@ -4,10 +4,13 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
+  fetchLiveJson,
   INDEX_CACHE_CONTROL,
   PACKAGE_CACHE_CONTROL,
   runPublish,
+  serialOfUtc,
   verifyIndexSignature,
+  verifyRemoteBytes,
   type FetchLike,
   type R2Client,
 } from "./publish.ts";
@@ -42,7 +45,14 @@ function createMockR2() {
     },
   };
 
-  const seenHeaders: Array<{ url: string; ua: string | null; ae: string | null; decompress?: boolean }> = [];
+  const seenHeaders: Array<{
+    url: string;
+    ua: string | null;
+    ae: string | null;
+    decompress?: boolean;
+    redirect?: RequestRedirect;
+    cache?: RequestCache;
+  }> = [];
   const fetchFn: FetchLike = async (input, init) => {
     const url = String(input);
     const headers = new Headers(init?.headers);
@@ -51,6 +61,8 @@ function createMockR2() {
       ua: headers.get("User-Agent"),
       ae: headers.get("Accept-Encoding"),
       decompress: init?.decompress,
+      redirect: init?.redirect,
+      cache: init?.cache,
     });
     const rel = url.replace("https://addons.test/books/v1/", "books/v1/");
     const item = store.get(rel);
@@ -85,7 +97,7 @@ describe("publish", () => {
       });
 
       expect(res1.changed).toBe(true);
-      expect(res1.serial).toBe(1);
+      expect(res1.serial).toBe(202611211400);
       expect(res1.uploadedPackages.length).toBe(11);
       expect(res1.skippedPackages.length).toBe(0);
 
@@ -105,10 +117,17 @@ describe("publish", () => {
         expect(w.cacheControl).toBe(INDEX_CACHE_CONTROL);
       }
 
-      // Verify HTTPS verification used KoonaBooks headers + decompress: false
-      expect(mock.seenHeaders.every((h) => h.ua === "KoonaBooks" && h.ae === "identity" && h.decompress === false)).toBe(
-        true,
-      );
+      // Verify HTTPS verification used KoonaBooks headers + decompress: false + redirect: error + cache: no-store
+      expect(
+        mock.seenHeaders.every(
+          (h) =>
+            h.ua === "KoonaBooks" &&
+            h.ae === "identity" &&
+            h.decompress === false &&
+            h.redirect === "error" &&
+            h.cache === "no-store",
+        ),
+      ).toBe(true);
 
       // Verify signature
       expect(verifyIndexSignature(new TextEncoder().encode(res1.indexJson), res1.signature, [rawPubB64])).toBe(true);
@@ -351,7 +370,7 @@ describe("publish", () => {
       const initIdx = JSON.parse(initRes.indexJson);
       const vpsIndex = {
         ...initIdx,
-        serial: 5,
+        serial: 202611211530,
         addons: initIdx.addons.filter((a: any) => a.id !== "app.koona.google-books" && a.id !== "app.koona.wikidata"),
       };
       vpsStore.set("index.json", new TextEncoder().encode(JSON.stringify(vpsIndex)));
@@ -379,11 +398,13 @@ describe("publish", () => {
         keysFilePath: keysPath,
         s3: r2.s3,
         fetchFn: cutoverFetch,
+        now: new Date("2026-11-21T15:30:00Z"),
+        verifyRetryDelayMs: 0,
         log: () => {},
       });
 
-      // Serial incremented from VPS (5 -> 6), all 11 packages seeded into fresh R2 & verified on r2.test!
-      expect(res.serial).toBe(6);
+      // Serial incremented from VPS (202611211530 -> 202611211531), all 11 packages seeded into fresh R2 & verified on r2.test!
+      expect(res.serial).toBe(202611211531);
       expect(res.uploadedPackages.length).toBe(11);
       expect(r2.store.has("books/v1/index.json")).toBe(true);
       expect(r2.store.has("books/v1/index.json.sig")).toBe(true);
@@ -393,5 +414,65 @@ describe("publish", () => {
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
+  });
+
+  test("serialOfUtc formats UTC YYYYMMDDHHMM as safe integer", () => {
+    expect(serialOfUtc(new Date("2026-11-21T09:05:42Z"))).toBe(202611210905);
+  });
+
+  test("rejects non-identity Content-Encoding and retries transient errors in verifyRemoteBytes", async () => {
+    const payload = new TextEncoder().encode('{"ok":true}');
+
+    // fetchLiveJson rejects gzip Content-Encoding
+    const gzipFetch: FetchLike = async () =>
+      new Response(payload, { status: 200, headers: { "Content-Encoding": "gzip" } });
+    await expect(fetchLiveJson("https://addons.test/books/v1/index.json", gzipFetch)).rejects.toThrow(
+      /Unexpected Content-Encoding "gzip"/,
+    );
+
+    // verifyRemoteBytes rejects non-identity Content-Encoding
+    await expect(
+      verifyRemoteBytes("https://addons.test/books/v1/index.json", payload, gzipFetch, {
+        maxAttempts: 2,
+        retryDelayMs: 0,
+      }),
+    ).rejects.toThrow(/Unexpected Content-Encoding "gzip"/);
+
+    // verifyRemoteBytes accepts explicit identity Content-Encoding
+    const identityFetch: FetchLike = async () =>
+      new Response(payload, { status: 200, headers: { "Content-Encoding": "identity" } });
+    await expect(
+      verifyRemoteBytes("https://addons.test/books/v1/index.json", payload, identityFetch, {
+        retryDelayMs: 0,
+      }),
+    ).resolves.toBeUndefined();
+
+    // verifyRemoteBytes retries transient HTTP 503 and stale-byte mismatch, succeeding on attempt 3
+    let attempts = 0;
+    const flakyFetch: FetchLike = async () => {
+      attempts++;
+      if (attempts === 1) return new Response("Service Unavailable", { status: 503 });
+      if (attempts === 2) return new Response(new TextEncoder().encode("stale"), { status: 200 });
+      return new Response(payload, { status: 200 });
+    };
+    await verifyRemoteBytes("https://addons.test/books/v1/index.json", payload, flakyFetch, {
+      maxAttempts: 3,
+      retryDelayMs: 0,
+    });
+    expect(attempts).toBe(3);
+
+    // Fails after exhausting maxAttempts
+    let failAttempts = 0;
+    const always503: FetchLike = async () => {
+      failAttempts++;
+      return new Response("Unavailable", { status: 503 });
+    };
+    await expect(
+      verifyRemoteBytes("https://addons.test/books/v1/index.json", payload, always503, {
+        maxAttempts: 3,
+        retryDelayMs: 0,
+      }),
+    ).rejects.toThrow(/HTTP 503/);
+    expect(failAttempts).toBe(3);
   });
 });

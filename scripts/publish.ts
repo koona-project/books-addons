@@ -50,10 +50,10 @@ const signingKeyPem = args.signingKeyPath
 
 let s3: R2Client | undefined;
 if (!args.dryRun && !args.outDir) {
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-  const endpoint = process.env.R2_ENDPOINT_URL;
-  const bucket = process.env.R2_BUCKET;
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID?.trim();
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY?.trim();
+  const endpoint = process.env.R2_ENDPOINT_URL?.trim();
+  const bucket = process.env.R2_BUCKET?.trim();
   if (!accessKeyId || !secretAccessKey || !endpoint || !bucket) {
     console.error(
       "Missing R2 credentials: set R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ENDPOINT_URL, and R2_BUCKET",
@@ -65,6 +65,7 @@ if (!args.dryRun && !args.outDir) {
     secretAccessKey,
     endpoint,
     bucket,
+    region: "auto",
   }) as unknown as R2Client;
 }
 

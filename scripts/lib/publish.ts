@@ -107,6 +107,7 @@ export interface PublishOptions {
   s3?: R2Client;
   fetchFn?: FetchLike;
   cloneFn?: (repo: string, commit: string) => string;
+  verifyRetryDelayMs?: number;
   log?: (msg: string) => void;
 }
 
@@ -122,6 +123,19 @@ export interface PublishResult {
 
 export function formatUtcTimestamp(date: Date = new Date()): string {
   return date.toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+/**
+ * Formats UTC `YYYYMMDDHHMM` as a safe integer (e.g. `202611211530`), matching Koona Books'
+ * monotonic index serial convention so publishing to an empty bucket never resets serial to 1.
+ */
+export function serialOfUtc(date: Date = new Date()): number {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(date.getUTCDate()).padStart(2, "0");
+  const h = String(date.getUTCHours()).padStart(2, "0");
+  const min = String(date.getUTCMinutes()).padStart(2, "0");
+  return Number(`${y}${m}${d}${h}${min}`);
 }
 
 function compareSemver(a: string, b: string): number {
@@ -221,18 +235,28 @@ export function uploadAction(there: number | null, size: number, overwrite: bool
   };
 }
 
+function assertIdentityEncoding(res: Response, url: string): void {
+  const ce = res.headers.get("content-encoding")?.trim().toLowerCase();
+  if (ce && ce !== "identity") {
+    throw new Error(`Unexpected Content-Encoding "${ce}" for ${url} (expected identity or absent)`);
+  }
+}
+
 export async function fetchLiveJson<T>(
   url: string,
   fetchFn: FetchLike,
 ): Promise<T | null> {
   const res = await fetchFn(url, {
     headers: { "User-Agent": "KoonaBooks", "Accept-Encoding": "identity" },
+    redirect: "error",
+    cache: "no-store",
     decompress: false,
   });
   if (res.status === 404) return null;
   if (!res.ok) {
     throw new Error(`Failed to fetch ${url}: HTTP ${res.status}`);
   }
+  assertIdentityEncoding(res, url);
   return (await res.json()) as T;
 }
 
@@ -240,22 +264,42 @@ export async function verifyRemoteBytes(
   url: string,
   expectedBytes: Uint8Array,
   fetchFn: FetchLike,
+  opts: { maxAttempts?: number; retryDelayMs?: number } = {},
 ): Promise<void> {
-  const res = await fetchFn(url, {
-    headers: { "User-Agent": "KoonaBooks", "Accept-Encoding": "identity" },
-    decompress: false,
-  });
-  if (!res.ok) {
-    throw new Error(`HTTPS verification failed for ${url}: HTTP ${res.status}`);
-  }
-  const actual = new Uint8Array(await res.arrayBuffer());
+  const maxAttempts = opts.maxAttempts ?? 3;
+  const retryDelayMs = opts.retryDelayMs ?? 1000;
   const expectedHash = sha256Hex(expectedBytes);
-  const actualHash = sha256Hex(actual);
-  if (actual.length !== expectedBytes.length || actualHash !== expectedHash) {
-    throw new Error(
-      `HTTPS verification mismatch for ${url}: expected ${expectedBytes.length} bytes (${expectedHash.slice(0, 12)}), got ${actual.length} bytes (${actualHash.slice(0, 12)})`,
-    );
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const res = await fetchFn(url, {
+        headers: { "User-Agent": "KoonaBooks", "Accept-Encoding": "identity" },
+        redirect: "error",
+        cache: "no-store",
+        decompress: false,
+      });
+      if (!res.ok) {
+        throw new Error(`HTTPS verification failed for ${url}: HTTP ${res.status}`);
+      }
+      assertIdentityEncoding(res, url);
+      const actual = new Uint8Array(await res.arrayBuffer());
+      const actualHash = sha256Hex(actual);
+      if (actual.length !== expectedBytes.length || actualHash !== expectedHash) {
+        throw new Error(
+          `HTTPS verification mismatch for ${url}: expected ${expectedBytes.length} bytes (${expectedHash.slice(0, 12)}), got ${actual.length} bytes (${actualHash.slice(0, 12)})`,
+        );
+      }
+      return;
+    } catch (err) {
+      lastError = err;
+      if (attempt < maxAttempts && retryDelayMs > 0) {
+        await new Promise((r) => setTimeout(r, retryDelayMs));
+      }
+    }
   }
+
+  throw lastError;
 }
 
 function buildVersionEntry(packed: PackedAddon, isChecked: boolean): IndexVersionEntry {
@@ -329,7 +373,8 @@ export async function runPublish(opts: PublishOptions): Promise<PublishResult> {
   const verifyUrl = (opts.verifyUrl ?? opts.baseUrl ?? liveUrl).replace(/\/?$/, "/");
   const isCutover = liveUrl !== verifyUrl;
   const prefix = (opts.prefix ?? DEFAULT_PREFIX).replace(/^\/+/, "").replace(/\/?$/, "/");
-  const nowStr = formatUtcTimestamp(opts.now);
+  const nowDate = opts.now ?? new Date();
+  const nowStr = formatUtcTimestamp(nowDate);
 
   // 1. Load live index.json + catalog.json (single source of truth)
   let liveIndex: IndexFile | null = null;
@@ -526,7 +571,7 @@ export async function runPublish(opts: PublishOptions): Promise<PublishResult> {
     };
   }
 
-  const nextSerial = (liveIndex?.serial ?? 0) + 1;
+  const nextSerial = Math.max(serialOfUtc(nowDate), (liveIndex?.serial ?? 0) + 1);
   const nextIndex: IndexFile = {
     format: 1,
     serial: nextSerial,
@@ -638,7 +683,9 @@ export async function runPublish(opts: PublishOptions): Promise<PublishResult> {
     } else {
       log(`Already present in R2: ${key} (${bytes.length} bytes)`);
     }
-    await verifyRemoteBytes(`${verifyUrl}${fileName}`, bytes, fetchFn);
+    await verifyRemoteBytes(`${verifyUrl}${fileName}`, bytes, fetchFn, {
+      retryDelayMs: opts.verifyRetryDelayMs,
+    });
   }
 
   // 9b. Upload index.json.sig, index.json, catalog.json and verify all three over HTTPS
@@ -658,7 +705,9 @@ export async function runPublish(opts: PublishOptions): Promise<PublishResult> {
   }
 
   for (const f of metadataFiles) {
-    await verifyRemoteBytes(`${verifyUrl}${f.name}`, f.bytes, fetchFn);
+    await verifyRemoteBytes(`${verifyUrl}${f.name}`, f.bytes, fetchFn, {
+      retryDelayMs: opts.verifyRetryDelayMs,
+    });
   }
 
   log(

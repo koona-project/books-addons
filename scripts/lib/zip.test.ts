@@ -23,10 +23,16 @@ describe("zip", () => {
     const archive = zipFiles([{ name: "addon.json", data }]);
     const view = new DataView(archive.buffer, archive.byteOffset, archive.byteLength);
 
-    // Local file header: DOS time (offset 10) = 0x0000, DOS date (offset 12) = 0x0021
+    // Local file header: flags (offset 6) = 0x0000 for ASCII, DOS time (offset 10) = 0x0000, DOS date (offset 12) = 0x0021
     expect(view.getUint32(0, true)).toBe(0x04034b50);
+    expect(view.getUint16(6, true)).toBe(0x0000);
     expect(view.getUint16(10, true)).toBe(0x0000);
     expect(view.getUint16(12, true)).toBe(0x0021);
+
+    // Non-ASCII filename sets UTF-8 bit (0x0800)
+    const utf8Archive = zipFiles([{ name: "café.json", data }]);
+    const utf8View = new DataView(utf8Archive.buffer, utf8Archive.byteOffset, utf8Archive.byteLength);
+    expect(utf8View.getUint16(6, true)).toBe(0x0800);
 
     // Find Central Directory Header
     let cd = -1;

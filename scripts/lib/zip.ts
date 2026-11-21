@@ -14,10 +14,17 @@ const UNIX_FILE_ATTRS = ((0o100644 << 16) >>> 0);
 // Version made by: Unix (3) + ZIP 2.0 (20)
 const VERSION_MADE_BY = (3 << 8) | 20;
 const VERSION_NEEDED = 20;
-// UTF-8 filename flag
+// UTF-8 filename flag (set only for non-ASCII names, matching Rust's `zip` crate)
 const FLAG_UTF8 = 0x0800;
 const METHOD_STORED = 0;
 const METHOD_DEFLATE = 8;
+
+function isAscii(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    if (text.charCodeAt(i) > 0x7f) return false;
+  }
+  return true;
+}
 
 const CRC_TABLE = (() => {
   const table = new Uint32Array(256);
@@ -55,6 +62,7 @@ export function zipFiles(entries: readonly ZipEntry[]): Uint8Array {
 
   interface Prepared {
     nameBytes: Uint8Array;
+    flags: number;
     compressed: Uint8Array;
     crc: number;
     uncompressedSize: number;
@@ -67,12 +75,14 @@ export function zipFiles(entries: readonly ZipEntry[]): Uint8Array {
 
   for (const entry of sorted) {
     const nameBytes = encoder.encode(entry.name);
+    const flags = isAscii(entry.name) ? 0 : FLAG_UTF8;
     const compressed = new Uint8Array(
       deflateRawSync(entry.data, { level: DEFLATE_LEVEL }),
     );
     const crc = crc32(entry.data);
     prepared.push({
       nameBytes,
+      flags,
       compressed,
       crc,
       uncompressedSize: entry.data.length,
@@ -90,7 +100,7 @@ export function zipFiles(entries: readonly ZipEntry[]): Uint8Array {
   for (const p of prepared) {
     view.setUint32(pos, 0x04034b50, true);
     view.setUint16(pos + 4, VERSION_NEEDED, true);
-    view.setUint16(pos + 6, FLAG_UTF8, true);
+    view.setUint16(pos + 6, p.flags, true);
     view.setUint16(pos + 8, METHOD_DEFLATE, true);
     view.setUint16(pos + 10, DOS_TIME, true);
     view.setUint16(pos + 12, DOS_DATE, true);
@@ -112,7 +122,7 @@ export function zipFiles(entries: readonly ZipEntry[]): Uint8Array {
     view.setUint32(pos, 0x02014b50, true);
     view.setUint16(pos + 4, VERSION_MADE_BY, true);
     view.setUint16(pos + 6, VERSION_NEEDED, true);
-    view.setUint16(pos + 8, FLAG_UTF8, true);
+    view.setUint16(pos + 8, p.flags, true);
     view.setUint16(pos + 10, METHOD_DEFLATE, true);
     view.setUint16(pos + 12, DOS_TIME, true);
     view.setUint16(pos + 14, DOS_DATE, true);

@@ -327,4 +327,71 @@ describe("publish", () => {
       rmSync(tmp, { recursive: true, force: true });
     }
   });
+
+  test("supports pre-DNS cutover with separate --live-url (VPS) and --verify-url (R2)", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "books-addons-cutover-"));
+    try {
+      const { privatePem, rawPubB64 } = makeTestKeyPair();
+      const keysPath = join(tmp, "addons-keys.json");
+      writeFileSync(keysPath, JSON.stringify({ keys: [rawPubB64] }));
+
+      // Seed an existing VPS live index at serial 5 with 1 published add-on
+      const vpsStore = new Map<string, Uint8Array>();
+      const r2 = createMockR2();
+
+      // First pack locally to get exact hash for book-links
+      const initialOut = join(tmp, "init");
+      const initRes = await runPublish({
+        repoRoot,
+        outDir: initialOut,
+        signingKeyPem: privatePem,
+        keysFilePath: keysPath,
+        log: () => {},
+      });
+      const initIdx = JSON.parse(initRes.indexJson);
+      const vpsIndex = {
+        ...initIdx,
+        serial: 5,
+        addons: initIdx.addons.filter((a: any) => a.id !== "app.koona.google-books" && a.id !== "app.koona.wikidata"),
+      };
+      vpsStore.set("index.json", new TextEncoder().encode(JSON.stringify(vpsIndex)));
+
+      const cutoverFetch: FetchLike = async (input, init) => {
+        const url = String(input);
+        if (url.startsWith("https://vps.test/books/v1/")) {
+          const rel = url.slice("https://vps.test/books/v1/".length);
+          const data = vpsStore.get(rel);
+          return data ? new Response(data, { status: 200 }) : new Response("Not Found", { status: 404 });
+        }
+        if (url.startsWith("https://r2.test/books/v1/")) {
+          const rel = `books/v1/${url.slice("https://r2.test/books/v1/".length)}`;
+          const item = r2.store.get(rel);
+          return item ? new Response(item.data, { status: 200 }) : new Response("Not Found", { status: 404 });
+        }
+        return new Response("Not Found", { status: 404 });
+      };
+
+      const res = await runPublish({
+        repoRoot,
+        liveUrl: "https://vps.test/books/v1/",
+        verifyUrl: "https://r2.test/books/v1/",
+        signingKeyPem: privatePem,
+        keysFilePath: keysPath,
+        s3: r2.s3,
+        fetchFn: cutoverFetch,
+        log: () => {},
+      });
+
+      // Serial incremented from VPS (5 -> 6), all 11 packages seeded into fresh R2 & verified on r2.test!
+      expect(res.serial).toBe(6);
+      expect(res.uploadedPackages.length).toBe(11);
+      expect(r2.store.has("books/v1/index.json")).toBe(true);
+      expect(r2.store.has("books/v1/index.json.sig")).toBe(true);
+      expect(r2.store.has("books/v1/catalog.json")).toBe(true);
+      expect(r2.store.has("books/v1/app.koona.google-books-1.0.0.kbooksaddon")).toBe(true);
+      expect(r2.store.has("books/v1/app.koona.book-links-1.0.0.kbooksaddon")).toBe(true);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
 });

@@ -91,6 +91,11 @@ export type FetchLike = (
 
 export interface PublishOptions {
   repoRoot: string;
+  /** Where the current live `index.json` and `catalog.json` are read from (source of truth for serial and hashes). */
+  liveUrl?: string;
+  /** Where uploaded R2 objects are verified over HTTPS (defaults to `liveUrl`). Set to the R2 public URL during pre-DNS cutover. */
+  verifyUrl?: string;
+  /** Alias for setting both `liveUrl` and `verifyUrl`. */
   baseUrl?: string;
   prefix?: string;
   dryRun?: boolean;
@@ -320,15 +325,17 @@ function catalogEntryFromLiveChecked(
 export async function runPublish(opts: PublishOptions): Promise<PublishResult> {
   const log = opts.log ?? ((msg: string) => console.log(msg));
   const fetchFn: FetchLike = opts.fetchFn ?? (fetch as FetchLike);
-  const baseUrl = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/?$/, "/");
+  const liveUrl = (opts.liveUrl ?? opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/?$/, "/");
+  const verifyUrl = (opts.verifyUrl ?? opts.baseUrl ?? liveUrl).replace(/\/?$/, "/");
+  const isCutover = liveUrl !== verifyUrl;
   const prefix = (opts.prefix ?? DEFAULT_PREFIX).replace(/^\/+/, "").replace(/\/?$/, "/");
   const nowStr = formatUtcTimestamp(opts.now);
 
   // 1. Load live index.json + catalog.json (single source of truth)
   let liveIndex: IndexFile | null = null;
   let liveCatalog: CatalogFile | null = null;
-  if (opts.outDir && !opts.baseUrl) {
-    // Local --out mode without explicit --base-url: read local <outDir>/index.json if present
+  if (opts.outDir && !opts.liveUrl && !opts.baseUrl) {
+    // Local --out mode without explicit --live-url: read local <outDir>/index.json if present
     const localIdx = join(opts.outDir, "index.json");
     if (existsSync(localIdx)) {
       liveIndex = JSON.parse(readFileSync(localIdx, "utf8")) as IndexFile;
@@ -338,8 +345,8 @@ export async function runPublish(opts: PublishOptions): Promise<PublishResult> {
       liveCatalog = JSON.parse(readFileSync(localCat, "utf8")) as CatalogFile;
     }
   } else {
-    liveIndex = await fetchLiveJson<IndexFile>(`${baseUrl}index.json`, fetchFn);
-    liveCatalog = await fetchLiveJson<CatalogFile>(`${baseUrl}catalog.json`, fetchFn);
+    liveIndex = await fetchLiveJson<IndexFile>(`${liveUrl}index.json`, fetchFn);
+    liveCatalog = await fetchLiveJson<CatalogFile>(`${liveUrl}catalog.json`, fetchFn);
   }
 
   const liveAddonsById = new Map<string, IndexAddonEntry>();
@@ -374,7 +381,12 @@ export async function runPublish(opts: PublishOptions): Promise<PublishResult> {
             `Immutability violation: ${packed.id}@${packed.version} is already published with sha256=${existingVersion.sha256}, but local build has sha256=${packed.sha256}. Bump the version instead.`,
           );
         }
-        skippedPackages.push(packed.file);
+        if (isCutover) {
+          // Cutover mode (liveUrl !== verifyUrl): seed missing packages into the new R2 bucket
+          packagesToUpload.set(packed.file, packed.bytes);
+        } else {
+          skippedPackages.push(packed.file);
+        }
       } else {
         packagesToUpload.set(packed.file, packed.bytes);
       }
@@ -626,7 +638,7 @@ export async function runPublish(opts: PublishOptions): Promise<PublishResult> {
     } else {
       log(`Already present in R2: ${key} (${bytes.length} bytes)`);
     }
-    await verifyRemoteBytes(`${baseUrl}${fileName}`, bytes, fetchFn);
+    await verifyRemoteBytes(`${verifyUrl}${fileName}`, bytes, fetchFn);
   }
 
   // 9b. Upload index.json.sig, index.json, catalog.json and verify all three over HTTPS
@@ -646,7 +658,7 @@ export async function runPublish(opts: PublishOptions): Promise<PublishResult> {
   }
 
   for (const f of metadataFiles) {
-    await verifyRemoteBytes(`${baseUrl}${f.name}`, f.bytes, fetchFn);
+    await verifyRemoteBytes(`${verifyUrl}${f.name}`, f.bytes, fetchFn);
   }
 
   log(

@@ -7,6 +7,8 @@ function parseArgs(argv: string[]) {
   let check = false;
   let force = false;
   let outDir: string | undefined;
+  let liveUrl: string | undefined;
+  let verifyUrl: string | undefined;
   let baseUrl: string | undefined;
   let signingKeyPath: string | undefined;
   let keysFilePath: string | undefined;
@@ -17,6 +19,8 @@ function parseArgs(argv: string[]) {
     else if (arg === "--check") check = true;
     else if (arg === "--force") force = true;
     else if (arg === "--out") outDir = resolve(process.cwd(), argv[++i]);
+    else if (arg === "--live-url") liveUrl = argv[++i];
+    else if (arg === "--verify-url") verifyUrl = argv[++i];
     else if (arg === "--base-url") baseUrl = argv[++i];
     else if (arg === "--signing-key") signingKeyPath = resolve(process.cwd(), argv[++i]);
     else if (arg === "--keys") keysFilePath = resolve(process.cwd(), argv[++i]);
@@ -25,7 +29,7 @@ function parseArgs(argv: string[]) {
       process.exit(2);
     }
   }
-  return { dryRun, check, force, outDir, baseUrl, signingKeyPath, keysFilePath };
+  return { dryRun, check, force, outDir, liveUrl, verifyUrl, baseUrl, signingKeyPath, keysFilePath };
 }
 
 const repoRoot = resolve(import.meta.dir, "..");
@@ -34,7 +38,7 @@ const args = parseArgs(process.argv.slice(2));
 if (args.check) {
   await checkLiveBucket({
     repoRoot,
-    baseUrl: args.baseUrl,
+    baseUrl: args.verifyUrl ?? args.liveUrl ?? args.baseUrl,
     keysFilePath: args.keysFilePath,
   });
   process.exit(0);
@@ -66,6 +70,8 @@ if (!args.dryRun && !args.outDir) {
 
 await runPublish({
   repoRoot,
+  liveUrl: args.liveUrl,
+  verifyUrl: args.verifyUrl,
   baseUrl: args.baseUrl,
   dryRun: args.dryRun,
   force: args.force,

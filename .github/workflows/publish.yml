@@ -15,6 +15,16 @@ on:
         required: false
         default: false
         type: boolean
+      live_url:
+        description: "Override live index URL (source of truth for serial and hashes)"
+        required: false
+        default: ""
+        type: string
+      verify_url:
+        description: "Override HTTPS verification URL (e.g. R2 public URL before DNS cutover)"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -31,6 +41,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.2"
 
       - name: Run pipeline tests
         run: bun test
@@ -42,9 +54,18 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          FORCE_PUBLISH: ${{ inputs.force }}
+          LIVE_URL: ${{ inputs.live_url }}
+          VERIFY_URL: ${{ inputs.verify_url }}
         run: |
-          if [ "${{ inputs.force }}" = "true" ]; then
-            bun scripts/publish.ts --force
-          else
-            bun scripts/publish.ts
+          args=()
+          if [ "${FORCE_PUBLISH}" = "true" ]; then
+            args+=(--force)
           fi
+          if [ -n "${LIVE_URL}" ]; then
+            args+=(--live-url "${LIVE_URL}")
+          fi
+          if [ -n "${VERIFY_URL}" ]; then
+            args+=(--verify-url "${VERIFY_URL}")
+          fi
+          bun scripts/publish.ts "${args[@]}"

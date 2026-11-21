@@ -143,6 +143,25 @@ describe("pack", () => {
     }
   });
 
+  test("produces byte-identical SHA-256 to Rust packer for all 9 published 1.0.0 add-ons", () => {
+    const published: Record<string, string> = {
+      "book-links": "13e40687e35e63e1c2914ef1f675852f094ac8316825fe693d0f575cd1cecea8",
+      "book-list-csv": "f9eadf94815c59a63d13257f1d930b01a8eb1924f9dee127497c36cc0adce7b8",
+      "citations": "f92401509cfe026ba89c3bafac5de6a65eb125e2ee5f4f0595a27ea4352ffd59",
+      "crosspoint-wifi": "e2bd20c660bc1cda6fb9eda8f1520f46e9648bcb7b2d14e76065aedcf119f708",
+      "hardcover": "5649365a6bb649325ce93926053c3f1b56f4ac9f7ad287cf88869914aa510e01",
+      "koreader-sync": "94876cd5d4e140bab62cb0a36955fa8f2298c6e3da7a651f0e27cba4407252b8",
+      "opds": "af15d2d53f485fd3366fe6f3cf7c1b1ffbf3af4bfc40dc67900bf64a2f962e43",
+      "openlibrary": "17113175376ba191f7c24826b2f099ac600338ebe3073a40690bd772a06f2022",
+      "xteink-card": "4d3f5bdf943075b462397f1366feaa9785e7d8878583d8573136316ec2aad9fd",
+    };
+
+    for (const [folder, expectedSha256] of Object.entries(published)) {
+      const packed = packAddonDir(join(repoRoot, "examples", folder));
+      expect(packed.sha256).toBe(expectedSha256);
+    }
+  });
+
   test("rejects disallowed file extensions and BOM", () => {
     const dir = mkdtempSync(join(tmpdir(), "books-addons-pack-test-"));
     try {

@@ -1,13 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
+  checkAgainstLiveIndex,
   checkLicenseText,
   checkPlaceholders,
   loadValidationContext,
   validateAddonFolder,
   validateRegistryEntry,
+  validateRegistryFile,
   type RegistryEntry,
 } from "./validate.ts";
 
@@ -151,8 +153,49 @@ describe("validate", () => {
       const koonaRes = validateAddonFolder(dir, entry, ctx);
       expect(koonaRes.ok).toBe(false);
       expect(koonaRes.errors.join(" ")).toContain("reserved_name");
+
+      // Live index immutability check
+      const liveIndex = {
+        addons: [{ id: "dev.janedoe.notes", versions: [{ version: "1.0.0", sha256: "a".repeat(64) }] }],
+      };
+      expect(checkAgainstLiveIndex(entry, okRes.packed!, liveIndex)).toContain("Immutability violation");
+      expect(
+        checkAgainstLiveIndex(entry, okRes.packed!, {
+          addons: [{ id: "dev.janedoe.notes", versions: [{ version: "1.0.0", sha256: okRes.packed!.sha256 }] }],
+        }),
+      ).toBeNull();
     } finally {
       rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects symlinked folder escaping cloned repository root", () => {
+    const tmp = mkdtempSync(join(tmpdir(), "books-addons-symlink-test-"));
+    try {
+      const outside = join(tmp, "outside");
+      const cloned = join(tmp, "cloned");
+      mkdirSync(outside);
+      mkdirSync(cloned);
+      symlinkSync(outside, join(cloned, "escape"));
+
+      const regFile = join(tmp, "dev.janedoe.escape.json");
+      writeFileSync(
+        regFile,
+        JSON.stringify({
+          id: "dev.janedoe.escape",
+          version: "1.0.0",
+          repository: "https://github.com/janedoe/escape",
+          folder: "escape",
+          commit: "0123456789abcdef0123456789abcdef01234567",
+          license: "MIT",
+        }),
+      );
+
+      const res = validateRegistryFile(regFile, ctx, { clone: () => cloned });
+      expect(res.ok).toBe(false);
+      expect(res.errors.join(" ")).toContain("escapes repository root");
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
     }
   });
 });

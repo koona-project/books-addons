@@ -72,6 +72,20 @@ To publish a new version later, open a new pull request updating `version` and `
 - Edits to `examples/`, `starters/`, `skill/`, or `schema/` in a pull request — those are synced from Koona Books.
 - Secrets of any kind. Pull requests and issues are public.
 
+## Publishing (maintainers)
+
+Pushing to `main` (touching `examples/**`, `registry/**`, or `withdrawn.json`) runs `.github/workflows/publish.yml` in the protected `publish` environment.
+
+For the initial pre-DNS cutover into a fresh Cloudflare R2 bucket (reading the current `serial` and published hashes from the existing `addons.koona.app` server while verifying uploaded objects against R2's public URL), run `publish.yml` via **Run workflow** with `verify_url` set to the R2 bucket's public URL (e.g. `https://pub-<id>.r2.dev/books/v1/`), or run locally:
+
+```sh
+bun scripts/publish.ts \
+  --live-url https://addons.koona.app/books/v1/ \
+  --verify-url https://pub-<id>.r2.dev/books/v1/
+```
+
+Once DNS for `addons.koona.app` points to R2, no URL flags are needed.
+
 ## License
 
 The add-ons in `examples/` and `starters/`, and the copies of them in the skill's folder, are under the MIT license: [LICENSE](LICENSE). Each add-on's `addon.json` names it too.

@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { packAddonDir, type Manifest, type PackedAddon } from "./pack.ts";
@@ -465,15 +465,45 @@ export function validateRegistryFile(
   }
 
   try {
-    const addonDir = entry.folder ? resolve(clonedDir, entry.folder) : clonedDir;
-    const rootResolved = resolve(clonedDir);
-    if (addonDir !== rootResolved && !addonDir.startsWith(`${rootResolved}/`)) {
+    const rootReal = realpathSync(clonedDir);
+    const candidate = entry.folder ? resolve(rootReal, entry.folder) : rootReal;
+    if (!existsSync(candidate)) {
+      return { ok: false, entry, errors: [`Add-on folder "${entry.folder || "."}" does not exist in repository`] };
+    }
+    const addonReal = realpathSync(candidate);
+    if (addonReal !== rootReal && !addonReal.startsWith(`${rootReal}/`)) {
       return { ok: false, entry, errors: [`Folder "${entry.folder}" escapes repository root`] };
     }
-    return validateAddonFolder(addonDir, entry, ctx);
+    return validateAddonFolder(addonReal, entry, ctx);
   } finally {
     if (!opts.clone) {
       rmSync(clonedDir, { recursive: true, force: true });
     }
   }
+}
+
+export interface LiveIndexLike {
+  addons: Array<{
+    id: string;
+    versions: Array<{ version: string; sha256: string }>;
+  }>;
+}
+
+/**
+ * Checks that an already-published `id@version` in the live index is not being mutated
+ * (e.g. by pointing `registry/<id>.json` at a new commit without bumping `version`).
+ */
+export function checkAgainstLiveIndex(
+  entry: RegistryEntry,
+  packed: PackedAddon,
+  liveIndex: LiveIndexLike | null,
+): string | null {
+  if (!liveIndex) return null;
+  const liveAddon = liveIndex.addons.find((a) => a.id === entry.id);
+  const liveVersion = liveAddon?.versions.find((v) => v.version === entry.version);
+  if (!liveVersion) return null;
+  if (liveVersion.sha256 !== packed.sha256) {
+    return `Immutability violation: ${entry.id}@${entry.version} is already published with sha256=${liveVersion.sha256}, but commit ${entry.commit} packs to ${packed.sha256}. Bump version instead of mutating a published version.`;
+  }
+  return null;
 }

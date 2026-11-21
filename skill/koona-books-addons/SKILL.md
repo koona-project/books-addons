@@ -171,9 +171,9 @@ When the app refuses the folder, the refusal names a code and often a field (`ma
 permissions.network`). `references/testing.md` words every code; fix exactly that and have them load the
 folder again.
 
-The same pages have a public home at https://addons.koona.app/books/docs/. Give the person that address when
+The same pages have a public home at https://addme.dev/books/docs/. Give the person that address when
 they want to read more; work from the copies in `references/`, which are the ones this skill was built
-with. An add-on is submitted for Koona's checked list at https://addme.dev/books/submit (`references/checking.md`); that
+with. An add-on is submitted for Koona's checked list by pull request in `koona-project/books-addons` (https://addme.dev/books/submit, `references/checking.md`); that
 is the person's to do, not yours.
 
 ## Reference files

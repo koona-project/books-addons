@@ -1,0 +1,57 @@
+{
+  "about": "What the review of an offer for Koona's checked list refuses that a form can see before it is sent, written from the review's own code in the app's add-ons crate. The codes are the review's.",
+  "license_file": {
+    "apache_placeholders": [
+      "[yyyy]",
+      "[name of copyright owner]"
+    ],
+    "apache_terms": "TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION",
+    "missing_code": "licence_text_missing",
+    "more_than_bytes": 100,
+    "name": "LICENSE.md",
+    "placeholders": [
+      "[year]",
+      "[fullname]",
+      "[name]",
+      "[owner]",
+      "[copyright holder]",
+      "[copyright holders]",
+      "<year>",
+      "<owner>",
+      "<name>",
+      "<copyright holder>",
+      "<copyright holders>",
+      "<organization>"
+    ],
+    "rule": "The file at the add-on's root, UTF-8 and not blank. With the white space at both ends trimmed it is more than more_than_bytes bytes, and holds none of placeholders (in any case), no todo in upper case as a whole word, and none of apache_placeholders (in any case) unless it also holds apache_terms (in any case).",
+    "stub_code": "licence_text_stub",
+    "todo": "TODO"
+  },
+  "placeholder_author": {
+    "code": "placeholder_author",
+    "name": "Your Name",
+    "rule": "author.name, with the white space at both ends trimmed, equal to name in any case."
+  },
+  "placeholder_host": {
+    "code": "placeholder_host",
+    "domains": [
+      "example.com",
+      "example.net",
+      "example.org",
+      "example",
+      "test",
+      "invalid",
+      "localhost"
+    ],
+    "rule": "A host, in lower case, that is one of the domains or ends with \".\" and one of them. Every host the manifest names counts: permissions.network.hosts, permissions.links.hosts, a book action's host, the host of the sign-in's issuer, authorize, token and revoke, and of homepage, source, support and author.url."
+  },
+  "placeholder_id": {
+    "code": "placeholder_id",
+    "prefixes": [
+      "org.example.",
+      "com.example.",
+      "net.example."
+    ],
+    "rule": "An id that starts with one of the prefixes, or is one of them without its last dot, is a starter's."
+  }
+}

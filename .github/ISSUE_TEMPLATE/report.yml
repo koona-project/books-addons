@@ -6,15 +6,15 @@ body:
   - type: markdown
     attributes:
       value: |
-        For a fault in what this repository holds: an example, a starter, the agent skill, or the pages for authors at https://addons.koona.app/books/docs/.
-        Those are a copy of what Koona Books publishes, so a fault is mended there and copied here again; nothing here is changed by a pull request.
-        To offer an add-on of your own for Koona's checked list, use the form "Offer an add-on" (or https://addme.dev/books/submit) instead. This issue is public: write no secret into it.
+        For a fault in what this repository holds: an example, a starter, the agent skill, or the pages for authors at https://addme.dev/books/docs/.
+        Those are a copy of what Koona Books publishes, so a fault is mended there and copied here again.
+        To offer an add-on of your own for Koona's checked list, open a pull request adding `registry/<your-addon-id>.json` (see https://addme.dev/books/submit). This issue is public: write no secret into it.
   - type: input
     id: where
     attributes:
       label: Where
       description: The file, or the page's address
-      placeholder: starters/send/send.lua, or https://addons.koona.app/books/docs/manifest
+      placeholder: starters/send/send.lua, or https://addme.dev/books/docs/manifest
     validations:
       required: true
   - type: textarea

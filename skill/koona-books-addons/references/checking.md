@@ -106,22 +106,15 @@ The sandbox already holds an add-on to its permissions. The review is for what t
 
 ## How to submit
 
-There is no way to submit from inside the app. Submit the add-on with the form at https://addme.dev/books/submit.
+There is no way to submit from inside the app. Submit the add-on by opening a pull request in `koona-project/books-addons` (instructions and template at https://addme.dev/books/submit).
 
-The form there is not an upload. It asks what the add-on does and for the GitHub address of its
-repository. It checks that the repository is there and that its `addon.json` passes the manifest's
-schema ([manifest.md](manifest.md#the-schema)), and only then can it be sent. Sending it takes you to
-GitHub, to an issue already written out for the public repository `koona-project/books-addons`. **The
-add-on is submitted when you file that issue there**, signed in to your own GitHub account; until then
-nobody has been asked anything. The rest is said and answered on the issue. A person at Koona reads the
-code before anything is signed. The form's own page says what it asks for; where it differs from this
-paragraph, the form is right.
+Add one JSON file at `registry/<your-addon-id>.json` pointing to your public GitHub repository and the exact 40-character commit SHA to review. GitHub Actions checks the repository, `addon.json`, `LICENSE.md`, and allowed file extensions automatically on the pull request. A person at Koona then reads every line of your add-on before merging and publishing it.
 
-The reviewer needs all of this, in the form or in the issue:
+The pull request needs all of this:
 
 - the address of a **public repository** and the **commit** to check. Not a `.kbooksaddon` file: the
   package is built from the source that was read, so nobody has to trust a file somebody else packed;
-- the folder of the add-on in that repository. The add-on must sit in a folder of its own, holding
+- the folder of the add-on in that repository (empty string `""` when `addon.json` is at the root). The add-on must sit in a folder of its own, holding
   nothing but the add-on: a package may hold only `.lua`, `.json` and `.md` files. That folder may be
   the repository's root (git's own `.git` there is passed over), as long as the repository tracks no
   other file a package may not hold: a `.gitignore` or a `.github` folder is refused in an add-on's
@@ -133,8 +126,7 @@ The reviewer needs all of this, in the form or in the issue:
 
 ## What you agree to
 
-This is a draft that a lawyer has not yet read; the final words may differ. You agree to it in writing
-(a comment on the issue that quotes it is enough).
+This is a draft that a lawyer has not yet read; the final words may differ. Confirm your agreement in the pull request description or as a comment on the pull request.
 
 > I wrote this add-on, or hold the rights to everything in it. It is not a port made by reading code
 > under the GPL, the AGPL or the LGPL, and holds no such code.
@@ -153,7 +145,7 @@ This is a draft that a lawyer has not yet read; the final words may differ. You 
 
 ## A new version
 
-Submit the new version through the same form. The reviewer reads what changed since the commit that
+Submit the new version by opening a pull request updating `registry/<your-addon-id>.json`. The reviewer reads what changed since the commit that
 was checked. Raise `version`,
 and say what changed in the locale key `changes` ([words.md](words.md)).
 

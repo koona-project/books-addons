@@ -1,0 +1,27 @@
+name: Check PR
+
+on:
+  pull_request:
+    paths:
+      - "registry/**"
+      - "examples/**"
+      - "scripts/**"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.2"
+
+      - name: Run pipeline tests
+        run: bun test
+
+      - name: Validate registry entries and examples
+        run: bun scripts/validate-pr.ts

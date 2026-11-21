@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { generateKeyPairSync } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
@@ -16,6 +16,7 @@ import {
 } from "./publish.ts";
 
 const repoRoot = resolve(import.meta.dir, "../..");
+const EXAMPLE_COUNT = readdirSync(join(repoRoot, "examples")).length;
 
 function makeTestKeyPair() {
   const { privateKey, publicKey } = generateKeyPairSync("ed25519");
@@ -98,12 +99,12 @@ describe("publish", () => {
 
       expect(res1.changed).toBe(true);
       expect(res1.serial).toBe(202611211400);
-      expect(res1.uploadedPackages.length).toBe(11);
+      expect(res1.uploadedPackages.length).toBe(EXAMPLE_COUNT);
       expect(res1.skippedPackages.length).toBe(0);
 
       // Verify Cache-Control headers
       const pkgWrites = mock.writes.filter((w) => w.key.endsWith(".kbooksaddon"));
-      expect(pkgWrites.length).toBe(11);
+      expect(pkgWrites.length).toBe(EXAMPLE_COUNT);
       for (const w of pkgWrites) {
         expect(w.cacheControl).toBe(PACKAGE_CACHE_CONTROL);
       }
@@ -148,7 +149,7 @@ describe("publish", () => {
 
       expect(res2.changed).toBe(false);
       expect(res2.uploadedPackages).toEqual([]);
-      expect(res2.skippedPackages.length).toBe(11);
+      expect(res2.skippedPackages.length).toBe(EXAMPLE_COUNT);
       expect(mock.writes.length).toBe(writesBefore);
       expect(logs2.some((l) => l.includes("Already up to date"))).toBe(true);
 
@@ -217,14 +218,14 @@ describe("publish", () => {
         log: () => {},
       });
 
-      expect(res.uploadedPackages.length).toBe(11);
+      expect(res.uploadedPackages.length).toBe(EXAMPLE_COUNT);
       expect(existsSync(join(outDir, "index.json"))).toBe(true);
       expect(existsSync(join(outDir, "index.json.sig"))).toBe(true);
       expect(existsSync(join(outDir, "catalog.json"))).toBe(true);
 
       const cat = JSON.parse(readFileSync(join(outDir, "catalog.json"), "utf8"));
       expect(cat.format).toBe(1);
-      expect(cat.addons.length).toBe(11);
+      expect(cat.addons.length).toBe(EXAMPLE_COUNT);
 
       // Dry-run touches nothing
       const mock = createMockR2();
@@ -403,13 +404,13 @@ describe("publish", () => {
         log: () => {},
       });
 
-      // Serial incremented from VPS (202611211530 -> 202611211531), all 11 packages seeded into fresh R2 & verified on r2.test!
+      // Serial incremented from VPS (202611211530 -> 202611211531), all example packages seeded into fresh R2 & verified on r2.test!
       expect(res.serial).toBe(202611211531);
-      expect(res.uploadedPackages.length).toBe(11);
+      expect(res.uploadedPackages.length).toBe(EXAMPLE_COUNT);
       expect(r2.store.has("books/v1/index.json")).toBe(true);
       expect(r2.store.has("books/v1/index.json.sig")).toBe(true);
       expect(r2.store.has("books/v1/catalog.json")).toBe(true);
-      expect(r2.store.has("books/v1/app.koona.google-books-1.0.0.kbooksaddon")).toBe(true);
+      expect(r2.store.has("books/v1/app.koona.wikidata-1.0.0.kbooksaddon")).toBe(true);
       expect(r2.store.has("books/v1/app.koona.book-links-1.0.0.kbooksaddon")).toBe(true);
     } finally {
       rmSync(tmp, { recursive: true, force: true });

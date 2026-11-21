@@ -1,5 +1,0 @@
-{
-  "does": "Sucht ein Buch bei Google Books, wenn Sie nach Angaben oder einem Cover fragen: nach ISBN oder nach Titel und Autor. Das Gefundene erscheint neben den Angaben Ihrer Bibliothek, und nichts ändert sich, bis Sie es übernehmen.",
-  "works": "Google Books (www.googleapis.com), öffentlicher Buchkatalog in vielen Sprachen ohne API-Schlüssel",
-  "changes": "Erste Version"
-}

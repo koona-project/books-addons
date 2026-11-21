@@ -113,11 +113,10 @@ describe("pack", () => {
     expect(listing.match_by).toBe("identifiers");
   });
 
-  test("packs all 11 real examples and generates valid catalog entries", () => {
+  test("packs all real examples and generates valid catalog entries", () => {
     const examplesDir = join(repoRoot, "examples");
     const folders = readdirSync(examplesDir).sort();
-    expect(folders.length).toBe(11);
-    expect(folders).toContain("google-books");
+    expect(folders.length).toBe(10);
     expect(folders).toContain("wikidata");
 
     for (const folder of folders) {

@@ -8,7 +8,7 @@ This repository holds the examples, starters, agent skill, and the pull-request 
 | --- | --- |
 | Have a coding agent write an add-on for you | [Install the skill](#install-the-skill), below |
 | Write one yourself | [The pages for authors](https://addme.dev/books/docs/) and a folder from [`starters/`](starters) |
-| See how a real one is made | [`examples/`](examples): the eleven add-ons that come with the app |
+| See how a real one is made | [`examples/`](examples): the ten add-ons that come with the app |
 | Offer yours for Koona's checked list | [Submit guide](https://addme.dev/books/submit) and [`registry/`](registry) |
 | See which add-ons there are | [The list](https://addme.dev/books/) |
 
@@ -47,7 +47,7 @@ The agent picks the skill up by itself and writes the add-on's folder. It cannot
 
 | Folder | What |
 | --- | --- |
-| [`examples/`](examples) | The eleven add-ons that come with Koona Books (`book-links`, `book-list-csv`, `citations`, `crosspoint-wifi`, `google-books`, `hardcover`, `koreader-sync`, `opds`, `openlibrary`, `wikidata`, `xteink-card`). Read them as models; do not copy one: its `id`, `name` and `author` are Koona's, and an add-on that keeps them is refused |
+| [`examples/`](examples) | The ten add-ons that come with Koona Books (`book-links`, `book-list-csv`, `citations`, `crosspoint-wifi`, `hardcover`, `koreader-sync`, `opds`, `openlibrary`, `wikidata`, `xteink-card`). Read them as models; do not copy one: its `id`, `name` and `author` are Koona's, and an add-on that keeps them is refused |
 | [`starters/`](starters) | One small working add-on for each category (`send`, `import`, `sync`, `info`, `tools`). Copy a folder, rename it, and make it yours |
 | [`skill/koona-books-addons/`](skill/koona-books-addons) | The agent skill, whole: its instructions, the authors' pages, the examples, the starters and the schema, in one folder that works on its own |
 | [`registry/`](registry) | One JSON file per third-party add-on on Koona's checked list (`registry/<id>.json`), submitted via pull request |

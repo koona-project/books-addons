@@ -1,5 +1,0 @@
-{
-  "does": "Busca un libro en Google Books cuando pides su información o una portada: por su ISBN o por título y autor. Lo encontrado aparece junto a lo que tiene tu biblioteca y nada cambia hasta que lo eliges.",
-  "works": "Google Books (www.googleapis.com), catálogo público de libros en muchos idiomas sin clave de API",
-  "changes": "Primera versión"
-}

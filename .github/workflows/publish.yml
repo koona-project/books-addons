@@ -1,0 +1,50 @@
+name: Publish Add-ons
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "examples/**"
+      - "registry/**"
+      - "withdrawn.json"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Force re-signing and uploading index.json & catalog.json even if unchanged"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-addons
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: publish
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Run pipeline tests
+        run: bun test
+
+      - name: Build, sign, and publish to R2
+        env:
+          ADDONS_SIGNING_KEY: ${{ secrets.ADDONS_SIGNING_KEY }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          if [ "${{ inputs.force }}" = "true" ]; then
+            bun scripts/publish.ts --force
+          else
+            bun scripts/publish.ts
+          fi

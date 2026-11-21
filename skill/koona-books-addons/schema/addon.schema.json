@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://addons.koona.app/books/docs/schema/addon.schema.json",
+  "$id": "https://addme.dev/books/docs/schema/addon.schema.json",
   "title": "addon.json",
   "description": "The manifest of a Koona Books add-on, as the app reads it at API level 1. Generated from the app's own check; what a schema cannot say is listed in x-koona-rules.",
   "x-koona-api": 1,

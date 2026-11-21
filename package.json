@@ -1,0 +1,10 @@
+{
+  "name": "books-addons",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "validate-pr": "bun scripts/validate-pr.ts",
+    "publish": "bun scripts/publish.ts"
+  }
+}

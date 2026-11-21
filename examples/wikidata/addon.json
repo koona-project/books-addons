@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "id": "app.koona.wikidata",
+  "version": "1.0.0",
+  "api": 1,
+  "min_app": "0.1.0",
+  "name": {
+    "en": "Wikidata",
+    "es": "Wikidata",
+    "de": "Wikidata"
+  },
+  "summary": {
+    "en": "Multilingual book details, series, translators and covers from Wikidata",
+    "es": "Datos de libros, series, traductores y portadas de Wikidata",
+    "de": "Buchinformationen, Reihen, Übersetzer und Cover von Wikidata"
+  },
+  "glyph": "search",
+  "category": "info",
+  "author": { "name": "Koona", "url": "https://koona.app" },
+  "homepage": "https://www.wikidata.org",
+  "license": "MIT",
+  "permissions": {
+    "network": {
+      "hosts": ["www.wikidata.org", "commons.wikimedia.org", "upload.wikimedia.org"],
+      "pace": { "per_minute": 30, "burst": 2 }
+    },
+    "book_query": true
+  },
+  "privacy": { "sends": ["book_details_to_service"], "collects": [] },
+  "tested": { "on": "www.wikidata.org/w/api.php", "date": "2026-11-21" },
+  "provides": [
+    {
+      "type": "book_info",
+      "id": "wikidata",
+      "entry": "info.lua",
+      "languages": ["*"],
+      "finds_by": ["title_author"],
+      "finds": ["info", "covers"]
+    }
+  ]
+}

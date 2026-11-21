@@ -9,9 +9,9 @@ An add-on is a folder of plain text files: a manifest (`addon.json`), one or mor
 [Luau](https://luau.org) (a Lua 5.1 dialect made for running untrusted scripts), and its words in
 `locales/`. There is nothing to compile and nothing to install to write one.
 
-These pages, the examples and the starters have their public home at https://addons.koona.app/books/docs/.
-Add-ons that other people made are listed at https://addme.dev/books/, and one is submitted for Koona's checked list
-with the form at https://addme.dev/books/submit ([checking.md](checking.md)).
+These pages, the examples and the starters have their public home at https://addme.dev/books/docs/.
+Add-ons are listed at https://addme.dev/books/, and one is submitted for Koona's checked list
+by pull request in `koona-project/books-addons` (https://addme.dev/books/submit, [checking.md](checking.md)).
 
 ## What an add-on can add
 

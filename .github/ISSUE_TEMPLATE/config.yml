@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: The form that fills this in
+  - name: Offer an add-on for Koona's checked list
     url: https://addme.dev/books/submit
-    about: Checks the repository and the manifest first, then opens the issue for you
+    about: Instructions and template for opening a pull request in registry/
   - name: How to write an add-on
-    url: https://addons.koona.app/books/docs/
+    url: https://addme.dev/books/docs/
     about: The reference for authors, the examples and the starters

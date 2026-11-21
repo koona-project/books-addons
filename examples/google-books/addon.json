@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "id": "app.koona.google-books",
+  "version": "1.0.0",
+  "api": 1,
+  "min_app": "0.1.0",
+  "name": {
+    "en": "Google Books",
+    "es": "Google Books",
+    "de": "Google Books"
+  },
+  "summary": {
+    "en": "Book details and covers from Google Books",
+    "es": "Información de libros y portadas de Google Books",
+    "de": "Buchinformationen und Cover von Google Books"
+  },
+  "glyph": "search",
+  "category": "info",
+  "author": { "name": "Koona", "url": "https://koona.app" },
+  "homepage": "https://books.google.com",
+  "license": "MIT",
+  "permissions": {
+    "network": {
+      "hosts": ["www.googleapis.com", "books.google.com", "books.googleusercontent.com"],
+      "pace": { "per_minute": 30, "burst": 2 }
+    },
+    "book_query": true
+  },
+  "privacy": { "sends": ["book_details_to_service"], "collects": [] },
+  "tested": { "on": "www.googleapis.com/books/v1/volumes", "date": "2026-11-21" },
+  "provides": [
+    {
+      "type": "book_info",
+      "id": "google_books",
+      "entry": "info.lua",
+      "languages": ["*"],
+      "finds_by": ["isbn", "title_author"],
+      "finds": ["info", "covers"]
+    }
+  ]
+}

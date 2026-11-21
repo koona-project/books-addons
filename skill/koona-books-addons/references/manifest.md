@@ -553,8 +553,8 @@ The rules of this page are also given as data, written from the app's own check:
   takes ([checking.md](checking.md)), as a list of SPDX names.
 
 They are for tools. An editor that knows the schema marks a mistyped key or a wrong value while you
-write. The form an add-on is submitted through (https://addme.dev/books/submit) checks the manifest with it before the
-form can be sent.
+write. The pull-request check in `koona-project/books-addons` validates every submission against it
+automatically.
 
 Tell your editor about the schema in the editor's own settings (in VS Code, the setting `json.schemas`,
 with `addon.json` as the file it applies to). Give it a copy of the file saved on your computer, or the
@@ -575,21 +575,13 @@ tried against the app's own check on many thousands of manifests. If it ever ref
 the app loads, the schema is at fault, not your manifest: report it in the repository
 `koona-project/books-addons`.
 
-### More data for tools and sites
+### More data for tools and CI
 
-The same folder holds what the sites around the checked list need from the app, each written by the
-app's own code, so that they cannot drift from it:
+The same folder holds the review rules written by the app's own code, so that CI in `koona-project/books-addons` cannot drift from it:
 
-- [`../schema/review-rules.json`](../schema/review-rules.json): what the review of an offer refuses
-  that a form can see before it is sent: a starter's id, author and example hosts, and the rules of
+- [`../schema/review-rules.json`](../schema/review-rules.json): what the automated review refuses
+  on sight: a starter's id, author and example hosts, and the rules of
   `LICENSE.md` ([checking.md](checking.md)).
-- [`../schema/submission.json`](../schema/submission.json): the offer's form as Koona reads the issue
-  it files: the repository, the label, and the shape of each field.
-- [`../schema/addons-keys.json`](../schema/addons-keys.json): the app's key file as it is, the address
-  apps read the checked list from and the public keys they accept its signature by.
-- [`../schema/index-samples/`](../schema/index-samples/samples.json): small indexes of the checked
-  list in the real format, each beside what an app lists from it, for the tests of a tool that reads
-  the index.
 
 ## What can change later
 

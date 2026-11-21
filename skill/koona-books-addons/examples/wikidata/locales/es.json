@@ -1,0 +1,5 @@
+{
+  "does": "Busca un libro en Wikidata cuando pides su información o una portada: por título y autor. Encuentra títulos en varios idiomas, título original, series, traductores y portadas de Wikimedia Commons. Nada cambia hasta que lo eliges.",
+  "works": "Wikidata (www.wikidata.org, catálogo abierto CC0) y Wikimedia Commons para portadas",
+  "changes": "Primera versión"
+}

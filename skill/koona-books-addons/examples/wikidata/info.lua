@@ -45,6 +45,52 @@ local LANG_QID = {
 
 local OTHER_LANGS = { "en", "ru", "de", "fr", "es", "it", "pl", "uk", "pt", "ja", "zh" }
 
+-- What an item must be an instance of (P31) to be a book: a work of writing, or one edition
+-- of one. The Action API cannot follow subclasses, so these are the classes book items use.
+-- Checked against Wikidata on 2026-11-24: "literary work", "written work" and "version,
+-- edition or translation" hold nearly all books; novel, short story, novella, poem and play
+-- now go in P7937 (form of creative work) and stay here for the items that still use them.
+-- A film, a TV series, an opera, a song, a character, a person or a scholarly article is
+-- none of these, whatever title it has.
+local BOOK_CLASSES = {
+  -- A work.
+  Q7725634 = true, -- literary work
+  Q47461344 = true, -- written work
+  Q571 = true, -- book
+  Q8261 = true, -- novel
+  Q149537 = true, -- novella
+  Q49084 = true, -- short story
+  Q1279564 = true, -- short story collection
+  Q12106333 = true, -- poetry collection
+  Q5185279 = true, -- poem
+  Q25379 = true, -- play
+  Q116476516 = true, -- dramatic work
+  Q35760 = true, -- essay
+  Q20540385 = true, -- non-fiction literary work
+  Q193495 = true, -- monograph
+  Q1711593 = true, -- edited volume
+  Q1238720 = true, -- volume
+  Q36279 = true, -- biography
+  Q8275050 = true, -- children's book
+  Q699 = true, -- fairy tale
+  Q24723 = true, -- literary fairy tale
+  Q1347298 = true, -- serialized fiction
+  Q1760610 = true, -- comic book
+  Q2831984 = true, -- comic book album
+  Q725377 = true, -- graphic novel
+  Q8274 = true, -- manga
+  Q13136 = true, -- reference work
+  Q23622 = true, -- dictionary
+  -- One edition of a work.
+  Q3331189 = true, -- version, edition or translation
+  Q57933693 = true, -- book edition
+  Q21112633 = true, -- edition of a translation
+  Q125309905 = true, -- translated work
+  Q59466300 = true, -- print edition
+  Q10898227 = true, -- first edition
+  Q1224889 = true, -- digital edition
+}
+
 local function text(value)
   if type(value) == "string" and value ~= "" then return value end
   return nil
@@ -230,11 +276,22 @@ local function claim_monolingual(entity, prop, want_list)
   return all[1].text, all[1].language
 end
 
-local function is_book_entity(entity)
-  if type(entity) ~= "table" or type(entity.claims) ~= "table" then return false end
-  local c = entity.claims
-  return c.P50 ~= nil or c.P212 ~= nil or c.P957 ~= nil or c.P629 ~= nil
-    or c.P1476 ~= nil or c.P123 ~= nil or c.P655 ~= nil or c.P179 ~= nil
+-- Whether the item is an instance of a book's class: a work of writing or an edition.
+local function of_book_class(entity)
+  for _, ref in ipairs(claim_qids(entity, "P31")) do
+    if BOOK_CLASSES[ref.qid] then return true end
+  end
+  return false
+end
+
+-- Whether the item is a book: of a book's class itself, or an edition of (P629) a work
+-- that is, among the works fetched.
+local function is_book(entity, works_map)
+  if of_book_class(entity) then return true end
+  for _, ref in ipairs(claim_qids(entity, "P629")) do
+    if of_book_class(works_map[ref.qid]) then return true end
+  end
+  return false
 end
 
 local function label_for(entity, want_list)
@@ -273,6 +330,233 @@ local function other_labels(entity, own_text)
   end
   if count > 0 then return out end
   return nil
+end
+
+-- ---- Names ---------------------------------------------------------------------------------
+--
+-- A person's name is compared two ways. As the app compares it: the same words in any order,
+-- case and ё aside ("Скотт, Вальтер" is "Вальтер Скотт"). And loosely, to see past the
+-- script: each word written in Latin letters with no marks and cut to its consonants
+-- ("Вальтер Скотт" and "Walter Scott" are both "altr skt"), the words of one name all among
+-- the words of the other. Initials are not compared loosely.
+
+-- A Latin letter with marks, in lower case, as the letters without them.
+local LATIN_PLAIN = {}
+for plain, marked in pairs({
+  a = "àáâãäåāăą", c = "çćĉċč", d = "ďđð", e = "èéêëēĕėęě", g = "ĝğġģ", h = "ĥħ",
+  i = "ìíîïĩīĭįı", j = "ĵ", k = "ķ", l = "ĺļľŀł", n = "ñńņňŋ", o = "òóôõöøōŏő",
+  r = "ŕŗř", s = "śŝşšșſ", t = "ţťŧț", u = "ùúûüũūŭůűų", w = "ŵ", y = "ýÿŷ", z = "źżž",
+  ae = "æ", oe = "œ", ss = "ß", th = "þ", ij = "ĳ",
+}) do
+  for _, cp in utf8.codes(marked) do LATIN_PLAIN[cp] = plain end
+end
+
+-- A Cyrillic letter in lower case (Russian, Ukrainian, Belarusian, Serbian) in Latin letters.
+local CYRILLIC_LATIN = {}
+for cyrillic, latin in pairs({
+  ["а"] = "a", ["б"] = "b", ["в"] = "v", ["г"] = "g", ["д"] = "d", ["е"] = "e", ["ж"] = "zh",
+  ["з"] = "z", ["и"] = "i", ["й"] = "j", ["к"] = "k", ["л"] = "l", ["м"] = "m", ["н"] = "n",
+  ["о"] = "o", ["п"] = "p", ["р"] = "r", ["с"] = "s", ["т"] = "t", ["у"] = "u", ["ф"] = "f",
+  ["х"] = "kh", ["ц"] = "ts", ["ч"] = "ch", ["ш"] = "sh", ["щ"] = "shch", ["ъ"] = "",
+  ["ы"] = "y", ["ь"] = "", ["э"] = "e", ["ю"] = "yu", ["я"] = "ya", ["і"] = "i", ["ї"] = "yi",
+  ["є"] = "ye", ["ґ"] = "g", ["ў"] = "u", ["ђ"] = "dj", ["ј"] = "j", ["љ"] = "lj",
+  ["њ"] = "nj", ["ћ"] = "c", ["џ"] = "dz",
+}) do
+  CYRILLIC_LATIN[utf8.codepoint(cyrillic)] = latin
+end
+
+-- A code point in lower case (Latin, Greek, Cyrillic), with ё as е.
+local function lower(cp)
+  if (cp >= 0x41 and cp <= 0x5A) or (cp >= 0xC0 and cp <= 0xDE and cp ~= 0xD7)
+    or (cp >= 0x391 and cp <= 0x3AB and cp ~= 0x3A2) or (cp >= 0x410 and cp <= 0x42F) then
+    cp = cp + 0x20
+  elseif cp >= 0x400 and cp <= 0x40F then
+    cp = cp + 0x50
+  elseif cp == 0x130 then
+    cp = 0x69
+  elseif cp == 0x178 then
+    cp = 0xFF
+  elseif (cp >= 0x100 and cp <= 0x137) or (cp >= 0x14A and cp <= 0x177) then
+    if cp % 2 == 0 then cp = cp + 1 end
+  elseif (cp >= 0x139 and cp <= 0x148) or (cp >= 0x179 and cp <= 0x17E) then
+    if cp % 2 == 1 then cp = cp + 1 end
+  end
+  if cp == 0x451 then cp = 0x435 end
+  return cp
+end
+
+-- Whether a code point, in lower case, is part of a word: a letter or a digit, as near as
+-- the blocks of punctuation and marks can say.
+local function in_word(cp)
+  if cp < 0x80 then return (cp >= 0x30 and cp <= 0x39) or (cp >= 0x61 and cp <= 0x7A) end
+  if cp <= 0xBF or cp == 0xD7 or cp == 0xF7 then return false end
+  if cp >= 0x300 and cp <= 0x36F then return false end
+  if cp >= 0x2000 and cp <= 0x2BFF then return false end
+  if cp >= 0x2E00 and cp <= 0x2E7F then return false end
+  if (cp >= 0x3000 and cp <= 0x303F) or cp == 0x30FB then return false end
+  if cp >= 0xFF00 and cp <= 0xFF20 then return false end
+  return true
+end
+
+-- The words of a name, folded: lower case, ё as е, anything but letters and digits between
+-- words.
+local function name_words(name)
+  local words, word = {}, {}
+  local function flush()
+    if #word > 0 then
+      words[#words + 1] = table.concat(word)
+      word = {}
+    end
+  end
+  for _, cp in utf8.codes(name) do
+    cp = lower(cp)
+    if in_word(cp) then word[#word + 1] = utf8.char(cp) else flush() end
+  end
+  flush()
+  return words
+end
+
+-- A word as its consonants in Latin letters: marks dropped, Cyrillic written in Latin, then
+-- the letters scripts render each their own way left out (the vowels after the first
+-- letter, h, j, v, w) and a doubled letter made one. "Скотт" and "Scott" are both "skt".
+-- A word of another script is kept as it is.
+local function consonants(word)
+  local out = {}
+  for _, cp in utf8.codes(word) do
+    out[#out + 1] = LATIN_PLAIN[cp] or CYRILLIC_LATIN[cp] or utf8.char(cp)
+  end
+  local s = table.concat(out)
+  if s:find("[^%l%d]") then return s end
+  s = s:gsub("ph", "f"):gsub("[cq]", "k"):gsub("x", "ks"):gsub("[vw]", "")
+  s = s:sub(1, 1) .. s:sub(2):gsub("[aeiouyhj]", "")
+  local n
+  repeat
+    s, n = s:gsub("(%l)%1", "%1")
+  until n == 0
+  return s
+end
+
+-- A name made ready to compare: its words in a fixed order, as the app reads a name, and
+-- its words of two letters or more as consonants.
+local function prepared(name)
+  local words = name_words(name)
+  local sorted, loose = {}, {}
+  for i, w in ipairs(words) do
+    sorted[i] = w
+    if utf8.len(w) >= 2 then
+      local c = consonants(w)
+      if c ~= "" then loose[c] = true end
+    end
+  end
+  table.sort(sorted)
+  return { key = table.concat(sorted, " "), loose = loose }
+end
+
+-- Whether every word of `a` is a word of `b`, and `a` has one.
+local function within(a, b)
+  local any = false
+  for word in pairs(a) do
+    if not b[word] then return false end
+    any = true
+  end
+  return any
+end
+
+local function same_name(a, b)
+  if a.key ~= "" and a.key == b.key then return true end
+  return within(a.loose, b.loose) or within(b.loose, a.loose)
+end
+
+-- The names an item goes by among the languages fetched, labels first, each language in
+-- a fixed order: { text, name } with `name` made ready to compare.
+local function spellings(entity)
+  local out = {}
+  if type(entity) ~= "table" then return out end
+  for _, field in ipairs({ "labels", "aliases" }) do
+    local by_lang = type(entity[field]) == "table" and entity[field] or {}
+    local langs = {}
+    for lang in pairs(by_lang) do
+      if type(lang) == "string" then langs[#langs + 1] = lang end
+    end
+    table.sort(langs)
+    for _, lang in ipairs(langs) do
+      local list = by_lang[lang]
+      if field == "labels" then list = { list } end
+      if type(list) == "table" then
+        for _, entry in ipairs(list) do
+          if type(entry) == "table" and text(entry.value) then
+            out[#out + 1] = { text = entry.value, name = prepared(entry.value) }
+          end
+        end
+      end
+    end
+  end
+  return out
+end
+
+-- How an item's names stand to the names asked for: nil when none of its names was fetched,
+-- else whether one is the same person's, and the one of its names that is an asked name as
+-- the app compares them (written just as asked, when one is).
+local function person_agrees(entity, asked)
+  local all = spellings(entity)
+  if #all == 0 then return nil end
+  local loose, exact = false, nil
+  for _, sp in ipairs(all) do
+    for _, a in ipairs(asked) do
+      if sp.name.key ~= "" and sp.name.key == a.key then
+        if sp.text == a.text then return true, sp end
+        exact = exact or sp
+      end
+      loose = loose or same_name(sp.name, a)
+    end
+  end
+  if exact then return true, exact end
+  return loose, nil
+end
+
+-- The authors of the query, made ready to compare.
+local function asked_names(query)
+  local out = {}
+  for _, name in ipairs(query.authors) do
+    if text(name) then
+      local p = prepared(name)
+      p.text = name
+      if p.key ~= "" then out[#out + 1] = p end
+    end
+  end
+  return out
+end
+
+-- How a candidate's authors (P50), its own and its work's, stand to the authors asked for:
+-- "same" when one of them is one, "other" when they are known and none is, nil when none
+-- of their names was fetched.
+local function authors_stand(ent, work, labels_map, asked)
+  local known = false
+  for _, source in ipairs({ ent, work or {} }) do
+    for _, ref in ipairs(claim_qids(source, "P50")) do
+      local agrees = person_agrees(labels_map[ref.qid], asked)
+      if agrees then return "same" end
+      if agrees == false then known = true end
+    end
+  end
+  if known then return "other" end
+  return nil
+end
+
+-- An author, as the library writes them when one of their names is exactly an asked name:
+-- the app then sees its own author in the candidate, and the label it would have been
+-- shown under is one of the other names.
+local function as_asked(target, name, name_lang, asked)
+  local also = other_labels(target, name)
+  local own = prepared(name).key
+  for _, a in ipairs(asked) do
+    if a.key == own then return name, also end
+  end
+  local _, same = person_agrees(target, asked)
+  if not same then return name, also end
+  also = other_labels(target, same.text) or {}
+  if name_lang then also[name_lang] = name end
+  return same.text, also
 end
 
 local function parse_time(entity, prop)
@@ -390,53 +674,41 @@ local function find_qids(query, want_list)
   return qids or {}, asked
 end
 
-local function collect_work_qids(book_entities)
+-- The items named by these entities' claims, authors first so that a long list cuts
+-- genres before people: at most 40.
+local function collect_label_refs(entities_list, props)
   local qids, seen = {}, {}
-  for _, ent in ipairs(book_entities) do
-    for _, ref in ipairs(claim_qids(ent, "P629")) do
-      if not seen[ref.qid] and #qids < MAX_CLAIM_BATCH then
-        seen[ref.qid] = true
-        qids[#qids + 1] = ref.qid
-      end
-    end
-  end
-  return qids
-end
-
-local function collect_label_refs(entities_list)
-  local qids, seen = {}, {}
-  local function add(qid)
-    if qid and not seen[qid] and #qids < 40 then
-      seen[qid] = true
-      qids[#qids + 1] = qid
-    end
-  end
-  for _, ent in ipairs(entities_list) do
-    for _, prop in ipairs({ "P50", "P655", "P98", "P110", "P123", "P179", "P136" }) do
+  for _, prop in ipairs(props) do
+    for _, ent in ipairs(entities_list) do
       for _, ref in ipairs(claim_qids(ent, prop)) do
-        add(ref.qid)
+        if not seen[ref.qid] and #qids < 40 then
+          seen[ref.qid] = true
+          qids[#qids + 1] = ref.qid
+        end
       end
     end
   end
   return qids
 end
 
-local function build_people(ent, work, labels_map, want_list)
+local function build_people(ent, work, labels_map, want_list, asked)
   local people, seen = {}, {}
   local function add_role(source_ent, prop, role)
     if not source_ent then return end
     for _, ref in ipairs(claim_qids(source_ent, prop)) do
       local target = labels_map[ref.qid]
-      local name = label_for(target, want_list)
+      local name, name_lang = label_for(target, want_list)
       if name then
+        local also
+        if role == "author" then
+          name, also = as_asked(target, name, name_lang, asked)
+        else
+          also = other_labels(target, name)
+        end
         local key = role .. "\0" .. name
         if not seen[key] then
           seen[key] = true
-          people[#people + 1] = {
-            name = name,
-            role = role,
-            also = other_labels(target, name),
-          }
+          people[#people + 1] = { name = name, role = role, also = also }
         end
       end
     end
@@ -451,9 +723,9 @@ local function build_people(ent, work, labels_map, want_list)
   return people
 end
 
-local function candidate(qid, ent, works_map, labels_map, want_list, asked)
-  local work_ref = claim_qids(ent, "P629")[1]
-  local work = work_ref and works_map[work_ref.qid] or nil
+local function candidate(book, found)
+  local qid, ent, work = book.qid, book.ent, book.work
+  local labels_map, want_list = found.labels, found.want
 
   local p1476_text, p1476_lang = claim_monolingual(ent, "P1476", want_list)
   local lbl_text, lbl_lang = label_for(ent, want_list)
@@ -488,7 +760,7 @@ local function candidate(qid, ent, works_map, labels_map, want_list, asked)
     end
   end
 
-  local people = build_people(ent, work, labels_map, want_list)
+  local people = build_people(ent, work, labels_map, want_list, found.asked)
 
   local publisher
   local pub_ref = claim_qids(ent, "P123")[1]
@@ -522,7 +794,7 @@ local function candidate(qid, ent, works_map, labels_map, want_list, asked)
   if #tags == 0 and work then add_genres(work) end
 
   local identifiers = {}
-  local found_isbn = pick_isbn(ent, asked)
+  local found_isbn = pick_isbn(ent, found.isbn)
   if found_isbn then identifiers.isbn = { found_isbn } end
   identifiers.wikidata = { qid }
 
@@ -544,92 +816,31 @@ local function candidate(qid, ent, works_map, labels_map, want_list, asked)
   }
 end
 
-local wd = {}
-
-function wd.search(ctx, query)
+-- The books found for the query, in the catalog's order, each { qid, ent, work }, with the
+-- items their claims name (`ref_props`) fetched by labels and aliases. An item that is not a
+-- book (a film of the same name, its poster, a person) is left out. When the query names an
+-- author, a book whose authors are known and are others is left out, and so is a book
+-- whose authors are not known when another's are the ones asked for.
+local function find_books(query, props, ref_props)
   local want_list = want_langs(query)
   local langs = languages_param(want_list)
-  local qids, asked = find_qids(query, want_list)
-  if not qids then return { error = asked } end
-  if #qids == 0 then return { rows = {} } end
+  local qids, isbn = find_qids(query, want_list)
+  if not qids then return nil, isbn end
+  local found = { books = {}, labels = {}, want = want_list, isbn = isbn, asked = asked_names(query) }
+  if #qids == 0 then return found end
 
-  local entities, err = fetch_entities(qids, "labels|claims", langs, MAX_CLAIM_BATCH)
-  if not entities then return { error = err } end
+  local entities, err = fetch_entities(qids, props, langs, MAX_CLAIM_BATCH)
+  if not entities then return nil, err end
 
-  local ordered, book_entities = {}, {}
+  -- An item of a book's class is a book. Another that is an edition of (P629) a work may be
+  -- one: the works are fetched once, for both, and say so.
+  local items, work_qids, work_seen = {}, {}, {}
   for _, qid in ipairs(qids) do
     local ent = entities[qid]
-    if is_book_entity(ent) then
-      ordered[#ordered + 1] = { qid = qid, ent = ent }
-      book_entities[#book_entities + 1] = ent
-      if #ordered == 10 then break end
-    end
-  end
-  if #ordered == 0 then return { rows = {} } end
-
-  -- Fetch parent works (P629) with labels|claims so editions inherit original title, author, series, cover.
-  local work_qids = collect_work_qids(book_entities)
-  local works_map = {}
-  local all_with_claims = {}
-  for _, ent in ipairs(book_entities) do all_with_claims[#all_with_claims + 1] = ent end
-  if #work_qids > 0 then
-    local fetched_works, work_err = fetch_entities(work_qids, "labels|claims", langs, MAX_CLAIM_BATCH)
-    if fetched_works then
-      works_map = fetched_works
-      for _, qid in ipairs(work_qids) do
-        if works_map[qid] then all_with_claims[#all_with_claims + 1] = works_map[qid] end
-      end
-    elseif work_err then
-      koona.log("warn", "wikidata work lookup failed: " .. work_err)
-    end
-  end
-
-  -- Fetch referenced people, publishers, series, genres with labels ONLY (never claims) to stay tiny.
-  local ref_qids = collect_label_refs(all_with_claims)
-  local labels_map = {}
-  if #ref_qids > 0 then
-    local fetched_labels, ref_err = fetch_entities(ref_qids, "labels", langs, MAX_LABEL_BATCH)
-    if fetched_labels then
-      labels_map = fetched_labels
-    elseif ref_err then
-      koona.log("warn", "wikidata label lookup failed: " .. ref_err)
-    end
-  end
-
-  local out = {}
-  for _, item in ipairs(ordered) do
-    local c = candidate(item.qid, item.ent, works_map, labels_map, want_list, asked)
-    if c then out[#out + 1] = c end
-  end
-  return { rows = out }
-end
-
-function wd.covers(ctx, query)
-  local want_list = want_langs(query)
-  local langs = languages_param(want_list)
-  local qids, asked = find_qids(query, want_list)
-  if not qids then return { error = asked } end
-  if #qids == 0 then return { rows = {} } end
-
-  local entities, err = fetch_entities(qids, "claims", langs, MAX_CLAIM_BATCH)
-  if not entities then return { error = err } end
-
-  local out, seen = {}, {}
-  local function add(c)
-    if c and not seen[c.url] and #out < 20 then
-      seen[c.url] = true
-      out[#out + 1] = c
-    end
-  end
-
-  local work_qids, work_seen = {}, {}
-  for _, qid in ipairs(qids) do
-    local ent = entities[qid]
-    if is_book_entity(ent) then
-      for _, name in ipairs(claim_strings(ent, "P18")) do
-        add(commons_cover(name))
-      end
-      for _, ref in ipairs(claim_qids(ent, "P629")) do
+    local works = claim_qids(ent, "P629")
+    if of_book_class(ent) or #works > 0 then
+      items[#items + 1] = { qid = qid, ent = ent, work_ref = works[1] }
+      for _, ref in ipairs(works) do
         if not work_seen[ref.qid] and #work_qids < MAX_CLAIM_BATCH then
           work_seen[ref.qid] = true
           work_qids[#work_qids + 1] = ref.qid
@@ -638,20 +849,94 @@ function wd.covers(ctx, query)
     end
   end
 
-  if #work_qids > 0 and #out < 20 then
-    local works = fetch_entities(work_qids, "claims", langs, MAX_CLAIM_BATCH)
-    if works then
-      for _, qid in ipairs(work_qids) do
-        local w = works[qid]
-        if type(w) == "table" then
-          for _, name in ipairs(claim_strings(w, "P18")) do
-            add(commons_cover(name))
-          end
-        end
-      end
+  -- Works with their claims, so editions inherit the original title, author, series and
+  -- cover. A work the search found too is not asked for again.
+  local works_map, to_fetch = {}, {}
+  for _, qid in ipairs(work_qids) do
+    if entities[qid] then works_map[qid] = entities[qid] else to_fetch[#to_fetch + 1] = qid end
+  end
+  if #to_fetch > 0 then
+    local fetched, work_err = fetch_entities(to_fetch, props, langs, MAX_CLAIM_BATCH)
+    if fetched then
+      for k, v in pairs(fetched) do works_map[k] = v end
+    elseif work_err then
+      koona.log("warn", "wikidata work lookup failed: " .. work_err)
     end
   end
 
+  local books, with_claims = {}, {}
+  for _, item in ipairs(items) do
+    if #books < 10 and is_book(item.ent, works_map) then
+      item.work = item.work_ref and works_map[item.work_ref.qid] or nil
+      books[#books + 1] = item
+      with_claims[#with_claims + 1] = item.ent
+      if item.work then with_claims[#with_claims + 1] = item.work end
+    end
+  end
+  if #books == 0 then return found end
+
+  -- The people, publishers, series and genres named, by labels and aliases only (never
+  -- claims), to stay small.
+  local ref_qids = collect_label_refs(with_claims, ref_props)
+  if #ref_qids > 0 then
+    local fetched, ref_err = fetch_entities(ref_qids, "labels|aliases", langs, MAX_LABEL_BATCH)
+    if fetched then
+      found.labels = fetched
+    elseif ref_err then
+      koona.log("warn", "wikidata label lookup failed: " .. ref_err)
+    end
+  end
+
+  if #found.asked > 0 then
+    local same, unknown = {}, {}
+    for _, b in ipairs(books) do
+      local stand = authors_stand(b.ent, b.work, found.labels, found.asked)
+      if stand == "same" then
+        same[#same + 1] = b
+      elseif stand == nil then
+        unknown[#unknown + 1] = b
+      end
+    end
+    books = #same > 0 and same or unknown
+  end
+  found.books = books
+  return found
+end
+
+local wd = {}
+
+function wd.search(ctx, query)
+  local found, err = find_books(query, "labels|claims", { "P50", "P655", "P98", "P110", "P123", "P179", "P136" })
+  if not found then return { error = err } end
+  local out = {}
+  for _, book in ipairs(found.books) do
+    local c = candidate(book, found)
+    if c then out[#out + 1] = c end
+  end
+  return { rows = out }
+end
+
+function wd.covers(ctx, query)
+  local found, err = find_books(query, "claims", { "P50" })
+  if not found then return { error = err } end
+
+  local out, seen = {}, {}
+  local function add(c)
+    if c and not seen[c.url] and #out < 20 then
+      seen[c.url] = true
+      out[#out + 1] = c
+    end
+  end
+  for _, book in ipairs(found.books) do
+    for _, name in ipairs(claim_strings(book.ent, "P18")) do
+      add(commons_cover(name))
+    end
+  end
+  for _, book in ipairs(found.books) do
+    for _, name in ipairs(claim_strings(book.work, "P18")) do
+      add(commons_cover(name))
+    end
+  end
   return { rows = out }
 end
 

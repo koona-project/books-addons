@@ -129,10 +129,13 @@ end
 -- pace of 30 a minute the waits for a turn pass the call's 150 seconds a little after 75;
 -- past this many the add-on stops asking and answers with what it has.
 local MAX_REQUESTS = 60
-local requests = 0
+-- Of those, the ones kept for the names the rows show (two batches), so the searching never
+-- spends them.
+local NAMES_RESERVE = 2
+local requests, budget = 0, MAX_REQUESTS
 
 local function api_get(params)
-  if requests >= MAX_REQUESTS then return nil, "spent" end
+  if requests >= budget then return nil, "spent" end
   requests = requests + 1
   local parts = { "format=json" }
   for _, pair in ipairs(params) do
@@ -731,19 +734,23 @@ local function asked_names(query)
   return out
 end
 
--- How a candidate's authors (P50), its own and its work's, stand to the authors asked for:
--- "same" when one of them is one, "other" when they are known and none is, nil when none
--- of their names was fetched.
-local function authors_stand(ent, work, labels_map, asked)
-  local known = false
-  for _, source in ipairs({ ent, work or {} }) do
+-- How a book's authors (P50), its own and those of every work it is an edition of, stand to
+-- the authors asked for: "same" when one of them is one; "other" when they are known and
+-- none is; "unverified" when it has authors (or a work that did not come) but none of
+-- their names was fetched; nil when it names no author at all.
+local function authors_stand(book, labels_map, asked)
+  local known, unverified = false, book.missing_work == true
+  local sources = { book.ent }
+  for _, w in ipairs(book.works or {}) do sources[#sources + 1] = w end
+  for _, source in ipairs(sources) do
     for _, ref in ipairs(claim_qids(source, "P50")) do
       local agrees = person_agrees(labels_map[ref.qid], asked)
       if agrees then return "same" end
-      if agrees == false then known = true end
+      if agrees == false then known = true else unverified = true end
     end
   end
   if known then return "other" end
+  if unverified then return "unverified" end
   return nil
 end
 
@@ -776,8 +783,19 @@ local function as_asked(target, name, name_lang, asked)
     if a.key == own then return name, also_of(target, name) end
   end
   local _, same = person_agrees(target, asked)
-  if not same then return name, also_of(target, name) end
-  return same.text, also_of(target, same.text, name_lang, name)
+  if same then return same.text, also_of(target, same.text, name_lang, name) end
+  -- A Chinese, Japanese or Korean name that differs only by its spaces is shown as the
+  -- library writes it, which the app compares space for space.
+  for _, sp in ipairs(spellings(target)) do
+    for _, a in ipairs(asked) do
+      if a.compacts and sp.name.compacts then
+        for c in pairs(sp.name.compacts) do
+          if a.compacts[c] then return a.text, also_of(target, a.text, name_lang, name) end
+        end
+      end
+    end
+  end
+  return name, also_of(target, name)
 end
 
 local function parse_time(entity, prop)
@@ -882,12 +900,13 @@ local function searches(query, want_list)
   local out = {}
   if query.title == "" then return out end
   -- The first two authors, each in turn: a second author is often the one Wikidata spells
-  -- as the library does.
-  for i = 1, math.min(#query.authors, 2) do
+  -- as the library does. A title of signs alone has no words to search the full text by.
+  local title_words = search_words(query.title)
+  for i = 1, (title_words ~= "" and math.min(#query.authors, 2) or 0) do
     local author = query.authors[i]
     if text(author) then
       out[#out + 1] = function()
-        return search_query(search_words(query.title) .. " " .. search_words(author))
+        return search_query(title_words .. " " .. search_words(author))
       end
     end
   end
@@ -1049,6 +1068,10 @@ end
 local function note(state, err)
   state.failed = state.failed or err
   if err == "limited" or err == "spent" then state.limited = true end
+  -- A failure that asking again could mend: a book whose authors it left unchecked is not
+  -- shown (the failure is the answer, and the app asks again later). An answer too large or
+  -- not understood will be so again, and the book is shown unchecked.
+  if err ~= "too_large" and err ~= "not_understood" then state.doubt = true end
 end
 
 local function books_among(qids, fetched, props, langs, state)
@@ -1101,7 +1124,17 @@ local function books_among(qids, fetched, props, langs, state)
     local ent = entities[qid]
     if type(ent) == "table" and is_book(ent, fetched, failed_works) then
       local work_ref = claim_qids(ent, "P629")[1]
-      books[#books + 1] = { qid = qid, ent = ent, work = work_ref and fetched[work_ref.qid] or nil }
+      local works, missing = {}, false
+      for _, ref in ipairs(claim_qids(ent, "P629")) do
+        if fetched[ref.qid] then works[#works + 1] = fetched[ref.qid] else missing = true end
+      end
+      books[#books + 1] = {
+        qid = qid,
+        ent = ent,
+        work = work_ref and fetched[work_ref.qid] or nil,
+        works = works,
+        missing_work = missing,
+      }
       keep[qid] = true
       for _, ref in ipairs(claim_qids(ent, "P629")) do keep[ref.qid] = true end
     end
@@ -1157,7 +1190,7 @@ local function find_books(query, props, ref_props)
     asked = asked_names(query),
   }
   local by_author = #found.asked > 0
-  requests = 0
+  requests, budget = 0, MAX_REQUESTS - NAMES_RESERVE
 
   local same, unknown, fetched, tried, names_asked = {}, {}, {}, {}, {}
   -- Whether any round found a book, by whoever; and whether Wikidata asked to slow down,
@@ -1168,7 +1201,7 @@ local function find_books(query, props, ref_props)
     -- A search that fails after books were found ends the searching: what was found is the
     -- answer (and with no row, the failure is: see the end).
     if not qids then
-      if not any_book then return nil, (err == "spent" and "limited" or err) end
+      if not any_book then return nil, (err == "spent" and "too_many" or err) end
       note(state, err)
       break
     end
@@ -1182,7 +1215,7 @@ local function find_books(query, props, ref_props)
     if #fresh > 0 then
       local books, books_err = books_among(fresh, fetched, props, langs, state)
       if not books then
-        if not any_book then return nil, (books_err == "spent" and "limited" or books_err) end
+        if not any_book then return nil, (books_err == "spent" and "too_many" or books_err) end
         break
       end
       any_book = any_book or #books > 0
@@ -1191,10 +1224,10 @@ local function find_books(query, props, ref_props)
         fetch_names(books, { "P50" }, found.labels, names_asked, langs, state)
         local others = {}
         for _, b in ipairs(books) do
-          local stand = authors_stand(b.ent, b.work, found.labels, found.asked)
+          local stand = authors_stand(b, found.labels, found.asked)
           if stand == "same" then
             same[#same + 1] = b
-          elseif stand == nil then
+          elseif stand == nil or (stand == "unverified" and not state.doubt) then
             unknown[#unknown + 1] = b
           else
             others[#others + 1] = b
@@ -1226,10 +1259,11 @@ local function find_books(query, props, ref_props)
   -- No row, and a search or a batch failed: the answer is the failure, not "nothing found",
   -- which the app would keep and give again for the same question.
   if #found.books == 0 and state.failed then
-    return nil, (state.failed == "spent" and "limited" or state.failed)
+    return nil, (state.failed == "spent" and "too_many" or state.failed)
   end
 
-  -- Then the names the rows show, for the rows kept only.
+  -- Then the names the rows show, for the rows kept only, with the requests kept for them.
+  budget = MAX_REQUESTS
   if #found.books > 0 then
     fetch_names(found.books, ref_props, found.labels, names_asked, langs, state)
   end

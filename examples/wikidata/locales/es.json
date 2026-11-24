@@ -1,5 +1,6 @@
 {
   "does": "Busca un libro en Wikidata cuando pides su información o una portada: por título y autor. Encuentra títulos en varios idiomas, título original, series, traductores y portadas de Wikimedia Commons. Nada cambia hasta que lo eliges.",
   "works": "Wikidata (www.wikidata.org, catálogo abierto CC0) y Wikimedia Commons para portadas",
-  "changes": "Solo encuentra libros: se omiten películas, series, óperas y personajes del mismo nombre, y también libros de otro autor cuando buscas con autor"
+  "changes": "Solo encuentra libros: se omiten películas, series, óperas y personajes del mismo nombre, y también libros de otro autor cuando buscas con autor",
+  "error.too_many": "Wikidata encontró más de lo que podía revisar para este libro. Prueba con su título completo."
 }

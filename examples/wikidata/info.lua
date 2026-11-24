@@ -197,38 +197,51 @@ local function languages_param(want_list)
   return table.concat(out, "|")
 end
 
+-- How many times a batch whose answer is too large is cut in half before its items are given
+-- up: a batch of ten becomes at most seven requests.
+local MAX_SPLITS = 2
+
 -- Fetch entities in bounded chunks, always passing `languages=` to stay well under host caps.
--- When a chunk fails: nil and the code, or, with `partial`, what came before it and the code.
+-- A batch whose answer is over the cap is asked again in halves. When a batch fails: nil and
+-- the code; with `partial`, the other batches are still asked, and the answer is what came,
+-- with the code of the first failure.
 local function fetch_entities(qids, props, langs, chunk_size, partial)
-  if #qids == 0 then return {} end
-  local limit = chunk_size or MAX_CLAIM_BATCH
-  local merged = {}
-  local i = 1
-  while i <= #qids do
-    local batch = {}
-    local stop = math.min(i + limit - 1, #qids)
-    for j = i, stop do
-      batch[#batch + 1] = qids[j]
-    end
-    local params = {
+  local merged, first_err = {}, nil
+  local function fetch(batch, splits)
+    local answer, err = api_get({
       { "action", "wbgetentities" },
       { "ids", table.concat(batch, "|") },
       { "props", props },
       { "languages", langs },
-    }
-    local answer, err = api_get(params)
-    if not answer then
-      if partial then return merged, err end
-      return nil, err
-    end
-    if type(answer.entities) == "table" then
-      for k, v in pairs(answer.entities) do
-        merged[k] = v
+    })
+    if answer then
+      if type(answer.entities) == "table" then
+        for k, v in pairs(answer.entities) do merged[k] = v end
       end
+      return true
     end
-    i = stop + 1
+    if err == "too_large" and #batch > 1 and splits < MAX_SPLITS then
+      local half = math.floor(#batch / 2)
+      local first, second = {}, {}
+      for j, qid in ipairs(batch) do
+        if j <= half then first[#first + 1] = qid else second[#second + 1] = qid end
+      end
+      local ok = fetch(first, splits + 1)
+      if not ok and not partial then return false end
+      return fetch(second, splits + 1) and ok
+    end
+    first_err = first_err or err
+    return false
   end
-  return merged
+  local limit = chunk_size or MAX_CLAIM_BATCH
+  local i = 1
+  while i <= #qids do
+    local batch = {}
+    for j = i, math.min(i + limit - 1, #qids) do batch[#batch + 1] = qids[j] end
+    if not fetch(batch, 0) and not partial then return nil, first_err end
+    i = i + limit
+  end
+  return merged, first_err
 end
 
 -- Extract claim datavalues of a property from an entity's claims table.
@@ -305,7 +318,12 @@ local function is_book(entity, works_map, works_failed)
   for _, ref in ipairs(works) do
     if of_book_class(works_map[ref.qid]) then return true end
   end
-  if #works > 0 and works_failed then return true end
+  if works_failed then
+    -- A work that could not be fetched is not held against its edition.
+    for _, ref in ipairs(works) do
+      if works_map[ref.qid] == nil then return true end
+    end
+  end
   return #claim_qids(entity, "P31") == 0
     and (#claim_strings(entity, "P212") > 0 or #claim_strings(entity, "P957") > 0)
 end
@@ -593,12 +611,19 @@ end
 
 -- Whether the library's name (`asked`) and a name Wikidata has (`spelling`) are one person's.
 -- The library's may be a part of Wikidata's ("Скотт" of "Вальтер Скотт"); Wikidata's may be
--- a part of the library's only when it is more than one word ("Скотт В." is, "Скотт" is not).
+-- a part of the library's only when it is more than one word ("Скотт В." is, "Скотт" is not)
+-- or is the label.
 local function same_name(asked, spelling)
   if asked.key ~= "" and asked.key == spelling.key then return true end
-  if asked.compacts and spelling.compact and asked.compacts[spelling.compact] then return true end
+  if asked.compacts and spelling.compacts then
+    for c in pairs(spelling.compacts) do
+      if asked.compacts[c] then return true end
+    end
+  end
   if within(asked, spelling) then return true end
-  return spelling.count + #spelling.initials >= 2 and within(spelling, asked)
+  -- A single word is a person's whole name when it is the label ("Colette", "Voltaire"),
+  -- and only a surname when it is an alias.
+  return (spelling.count + #spelling.initials >= 2 or spelling.label) and within(spelling, asked)
 end
 
 -- The names an item goes by among the languages fetched, labels first, each language in
@@ -619,7 +644,9 @@ local function spellings(entity)
       if type(list) == "table" then
         for _, entry in ipairs(list) do
           if type(entry) == "table" and text(entry.value) then
-            out[#out + 1] = { text = entry.value, name = prepared(entry.value) }
+            local name = prepared(entry.value)
+            name.label = field == "labels"
+            out[#out + 1] = { text = entry.value, name = name }
           end
         end
       end
@@ -972,9 +999,13 @@ end
 -- The books among `qids` (not yet fetched), in order, each { qid, ent, work }: their claims
 -- fetched by `props`, and the works they are editions of (P629) with them. An item that is
 -- not a book (a film of the same name, its poster, a person) is left out.
-local function books_among(qids, fetched, props, langs)
-  local entities, err = fetch_entities(qids, props, langs, MAX_CLAIM_BATCH)
-  if not entities then return nil, err end
+local function books_among(qids, fetched, props, langs, state)
+  -- A batch that fails leaves its items out; only a round with nothing at all fails.
+  local entities, err = fetch_entities(qids, props, langs, MAX_CLAIM_BATCH, true)
+  if err then
+    state.limited = state.limited or err == "limited"
+    if next(entities) == nil then return nil, err end
+  end
   local added = {}
   for k, v in pairs(entities) do
     if not fetched[k] then added[#added + 1] = k end
@@ -998,14 +1029,14 @@ local function books_among(qids, fetched, props, langs)
     if not fetched[qid] then to_fetch[#to_fetch + 1] = qid end
   end
   if #to_fetch > 0 then
-    local works, work_err = fetch_entities(to_fetch, props, langs, MAX_CLAIM_BATCH)
-    if works then
-      for k, v in pairs(works) do
-        if not fetched[k] then added[#added + 1] = k end
-        fetched[k] = v
-      end
-    else
+    local works, work_err = fetch_entities(to_fetch, props, langs, MAX_CLAIM_BATCH, true)
+    for k, v in pairs(works) do
+      if not fetched[k] then added[#added + 1] = k end
+      fetched[k] = v
+    end
+    if work_err then
       works_failed = true
+      state.limited = state.limited or work_err == "limited"
       koona.log("warn", "wikidata work lookup failed: " .. tostring(work_err))
     end
   end
@@ -1034,7 +1065,7 @@ local MAX_NAMES = 2 * MAX_LABEL_BATCH
 -- The names (labels and aliases, never claims, to stay small) of the items `props` name on
 -- these books and their works, added to `labels`: only those not asked for before
 -- (`asked_for`), at most MAX_NAMES. A batch that fails keeps what came before it.
-local function fetch_names(books, props, labels, asked_for, langs)
+local function fetch_names(books, props, labels, asked_for, langs, state)
   local with_claims = {}
   for _, b in ipairs(books) do
     with_claims[#with_claims + 1] = b.ent
@@ -1049,7 +1080,10 @@ local function fetch_names(books, props, labels, asked_for, langs)
     labels[k] = v
     asked_for[k] = true
   end
-  if err then koona.log("warn", "wikidata label lookup failed: " .. tostring(err)) end
+  if err then
+    state.limited = state.limited or err == "limited"
+    koona.log("warn", "wikidata label lookup failed: " .. tostring(err))
+  end
 end
 
 -- The books found for the query, in the catalog's order, each { qid, ent, work }, with the
@@ -1070,11 +1104,15 @@ local function find_books(query, props, ref_props)
   local by_author = #found.asked > 0
 
   local same, unknown, fetched, tried, names_asked = {}, {}, {}, {}, {}
+  -- Whether any round found a book, by whoever; and whether Wikidata asked to slow down,
+  -- which ends the searching: more requests would only wait out the call's time.
+  local any_book, state = false, { limited = false }
   for _, run in ipairs(searches(query, want_list)) do
     local qids, err = run()
-    -- A search that fails after books were found ends the searching, not the call.
+    -- A search that fails after books were found ends the searching, not the call: what
+    -- was found (or that nothing by the author was) is the answer.
     if not qids then
-      if #unknown > 0 then break end
+      if any_book then break end
       return nil, err
     end
     local fresh = {}
@@ -1085,34 +1123,54 @@ local function find_books(query, props, ref_props)
       end
     end
     if #fresh > 0 then
-      local books, books_err = books_among(fresh, fetched, props, langs)
+      local books, books_err = books_among(fresh, fetched, props, langs, state)
       if not books then
-        if #unknown > 0 then break end
+        if any_book then break end
         return nil, books_err
       end
+      any_book = any_book or #books > 0
       if by_author and #books > 0 then
         -- The authors' names first, to see whose books these are.
-        fetch_names(books, { "P50" }, found.labels, names_asked, langs)
+        fetch_names(books, { "P50" }, found.labels, names_asked, langs, state)
+        local others = {}
         for _, b in ipairs(books) do
           local stand = authors_stand(b.ent, b.work, found.labels, found.asked)
           if stand == "same" then
             same[#same + 1] = b
           elseif stand == nil then
             unknown[#unknown + 1] = b
+          else
+            others[#others + 1] = b
+          end
+        end
+        -- Another's book, and a work only it needs, are not kept: a call has 32 MiB.
+        local needed = {}
+        for _, list in ipairs({ same, unknown }) do
+          for _, b in ipairs(list) do
+            needed[b.qid] = true
+            for _, ref in ipairs(claim_qids(b.ent, "P629")) do needed[ref.qid] = true end
+          end
+        end
+        for _, b in ipairs(others) do
+          if not needed[b.qid] then fetched[b.qid] = nil end
+          for _, ref in ipairs(claim_qids(b.ent, "P629")) do
+            if not needed[ref.qid] then fetched[ref.qid] = nil end
           end
         end
       else
         for _, b in ipairs(books) do same[#same + 1] = b end
       end
     end
-    if #same > 0 then break end
+    if #same > 0 or state.limited then break end
   end
   local books = #same > 0 and same or unknown
   for i = 1, math.min(#books, MAX_BOOKS) do found.books[i] = books[i] end
   found.fetched = fetched
 
   -- Then the names the rows show, for the rows kept only.
-  if #found.books > 0 then fetch_names(found.books, ref_props, found.labels, names_asked, langs) end
+  if #found.books > 0 then
+    fetch_names(found.books, ref_props, found.labels, names_asked, langs, state)
+  end
   return found
 end
 

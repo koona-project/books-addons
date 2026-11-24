@@ -125,7 +125,15 @@ local function decode(body)
   return nil
 end
 
+-- The most requests one search or cover lookup makes. The app ends a call at 100, and at the
+-- pace of 30 a minute the waits for a turn pass the call's 150 seconds a little after 75;
+-- past this many the add-on stops asking and answers with what it has.
+local MAX_REQUESTS = 60
+local requests = 0
+
 local function api_get(params)
+  if requests >= MAX_REQUESTS then return nil, "spent" end
+  requests = requests + 1
   local parts = { "format=json" }
   for _, pair in ipairs(params) do
     parts[#parts + 1] = pair[1] .. "=" .. koona.url.encode(pair[2])
@@ -135,6 +143,14 @@ local function api_get(params)
   local answer = decode(body)
   if not answer then return nil, "not_understood" end
   return answer
+end
+
+-- Text as plain words for the full-text search, which reads quotes, signs, brackets, colons
+-- (`haswbstatement:`, `insource:`) and AND, OR, NOT in capitals as its own.
+local function search_words(text_)
+  text_ = text_:gsub('[%-%+!"~%*%?\\/%(%)%[%]{}:|&^<>=]', " ")
+  text_ = text_:gsub("%f[%w]AND%f[%W]", "and"):gsub("%f[%w]OR%f[%W]", "or"):gsub("%f[%w]NOT%f[%W]", "not")
+  return (text_:gsub("%s+", " "):gsub("^ ", ""):gsub(" $", ""))
 end
 
 local function search_query(srsearch)
@@ -310,19 +326,15 @@ local function of_book_class(entity)
 end
 
 -- Whether the item is a book: of a book's class itself, or an edition of (P629) a work
--- that is, among the works fetched (any edition, when the works could not be fetched); or,
+-- that is, among the works fetched (or whose work was asked for and did not come); or,
 -- with no class at all, an item with an ISBN, an edition nobody has typed yet.
-local function is_book(entity, works_map, works_failed)
+local function is_book(entity, works_map, failed_works)
   if of_book_class(entity) then return true end
   local works = claim_qids(entity, "P629")
   for _, ref in ipairs(works) do
     if of_book_class(works_map[ref.qid]) then return true end
-  end
-  if works_failed then
-    -- A work that could not be fetched is not held against its edition.
-    for _, ref in ipairs(works) do
-      if works_map[ref.qid] == nil then return true end
-    end
+    -- A work asked for that could not be fetched is not held against its edition.
+    if failed_works[ref.qid] then return true end
   end
   return #claim_qids(entity, "P31") == 0
     and (#claim_strings(entity, "P212") > 0 or #claim_strings(entity, "P957") > 0)
@@ -390,7 +402,8 @@ for plain, marked in pairs({
   for _, cp in utf8.codes(marked) do LATIN_PLAIN[cp] = plain end
 end
 
--- A Cyrillic letter in lower case (Russian, Ukrainian, Belarusian, Serbian) in Latin letters.
+-- A Cyrillic letter in lower case (Russian, Ukrainian, Belarusian, Serbian), or a Greek one,
+-- in Latin letters.
 local CYRILLIC_LATIN = {}
 for cyrillic, latin in pairs({
   ["а"] = "a", ["б"] = "b", ["в"] = "v", ["г"] = "g", ["д"] = "d", ["е"] = "e", ["ж"] = "zh",
@@ -400,6 +413,11 @@ for cyrillic, latin in pairs({
   ["ы"] = "y", ["ь"] = "", ["э"] = "e", ["ю"] = "yu", ["я"] = "ya", ["і"] = "i", ["ї"] = "yi",
   ["є"] = "ye", ["ґ"] = "g", ["ў"] = "u", ["ђ"] = "dj", ["ј"] = "j", ["љ"] = "lj",
   ["њ"] = "nj", ["ћ"] = "c", ["џ"] = "dz",
+  ["α"] = "a", ["ά"] = "a", ["β"] = "v", ["γ"] = "g", ["δ"] = "d", ["ε"] = "e", ["έ"] = "e",
+  ["ζ"] = "z", ["η"] = "i", ["ή"] = "i", ["θ"] = "th", ["ι"] = "i", ["ί"] = "i", ["ϊ"] = "i",
+  ["ΐ"] = "i", ["κ"] = "k", ["λ"] = "l", ["μ"] = "m", ["ν"] = "n", ["ξ"] = "x", ["ο"] = "o",
+  ["ό"] = "o", ["π"] = "p", ["ρ"] = "r", ["σ"] = "s", ["τ"] = "t", ["υ"] = "y", ["ύ"] = "y",
+  ["ϋ"] = "y", ["ΰ"] = "y", ["φ"] = "f", ["χ"] = "ch", ["ψ"] = "ps", ["ω"] = "o", ["ώ"] = "o",
 }) do
   CYRILLIC_LATIN[utf8.codepoint(cyrillic)] = latin
 end
@@ -420,7 +438,19 @@ local function lower(cp)
   elseif (cp >= 0x139 and cp <= 0x148) or (cp >= 0x179 and cp <= 0x17E) then
     if cp % 2 == 1 then cp = cp + 1 end
   end
+  -- Greek with an accent, in capitals.
+  if cp == 0x386 then
+    cp = 0x3AC
+  elseif cp >= 0x388 and cp <= 0x38A then
+    cp = cp + 0x25
+  elseif cp == 0x38C then
+    cp = 0x3CC
+  elseif cp == 0x38E or cp == 0x38F then
+    cp = cp + 0x3F
+  end
   if cp == 0x451 then cp = 0x435 end
+  -- The final sigma is a sigma, as the app's search has it.
+  if cp == 0x3C2 then cp = 0x3C3 end
   return cp
 end
 
@@ -460,7 +490,8 @@ end
 -- Whether a code point is written by Chinese, Japanese or Korean, whose names run their words
 -- together as often as not.
 local function is_cjk(cp)
-  return (cp >= 0x1100 and cp <= 0x11FF) or (cp >= 0x3040 and cp <= 0x30FF)
+  return (cp >= 0x1100 and cp <= 0x11FF) or (cp >= 0x3005 and cp <= 0x3007)
+    or (cp >= 0x3040 and cp <= 0x30FF)
     or (cp >= 0x3130 and cp <= 0x318F) or (cp >= 0x31F0 and cp <= 0x31FF)
     or (cp >= 0x3400 and cp <= 0x4DBF) or (cp >= 0x4E00 and cp <= 0x9FFF)
     or (cp >= 0xAC00 and cp <= 0xD7AF) or (cp >= 0xF900 and cp <= 0xFAFF)
@@ -474,7 +505,10 @@ local function in_word(cp)
   if cp <= 0xBF or cp == 0xD7 or cp == 0xF7 then return false end
   if cp >= 0x2000 and cp <= 0x2BFF then return false end
   if cp >= 0x2E00 and cp <= 0x2E7F then return false end
-  if (cp >= 0x3000 and cp <= 0x303F) or cp == 0x30FB then return false end
+  -- 々 〆 〇 are letters of names ("佐々木"), not punctuation.
+  if (cp >= 0x3000 and cp <= 0x303F and not (cp >= 0x3005 and cp <= 0x3007)) or cp == 0x30FB then
+    return false
+  end
   if cp >= 0xFF00 and cp <= 0xFF20 then return false end
   return true
 end
@@ -552,6 +586,7 @@ end
 local function prepared(name)
   local words, cjk = name_words(name)
   local sorted, loose, count, initials, parts = {}, {}, 0, {}, {}
+  local first_key, last_key
   for i, w in ipairs(words) do
     sorted[i] = w
     local l = latin(w)
@@ -563,6 +598,8 @@ local function prepared(name)
       if c ~= "" then
         if not loose[c] then count = count + 1 end
         loose[c] = true
+        first_key = first_key or c
+        last_key = c
         parts[#parts + 1] = { key = c, first = l and initial(l) or nil }
       end
     elseif l then
@@ -580,6 +617,9 @@ local function prepared(name)
   end
   return {
     key = table.concat(sorted, " "),
+    -- The word that is most likely the surname: the first in "Colette, Sidonie-Gabrielle",
+    -- else the last.
+    surname = name:find(",", 1, true) and first_key or last_key,
     compact = cjk and table.concat(words) or nil,
     compacts = compacts,
     loose = loose,
@@ -621,9 +661,12 @@ local function same_name(asked, spelling)
     end
   end
   if within(asked, spelling) then return true end
-  -- A single word is a person's whole name when it is the label ("Colette", "Voltaire"),
-  -- and only a surname when it is an alias.
-  return (spelling.count + #spelling.initials >= 2 or spelling.label) and within(spelling, asked)
+  -- A single word is a person's whole name when it is the label ("Colette", "Voltaire") and
+  -- the library's name ends in it, as a surname ("Sidonie-Gabrielle Colette", not "Homer
+  -- Hickam" for "Homer"); and only a surname when it is an alias.
+  local whole = spelling.count + #spelling.initials >= 2
+    or (spelling.label and asked.surname ~= nil and spelling.loose[asked.surname] == true)
+  return whole and within(spelling, asked)
 end
 
 -- The names an item goes by among the languages fetched, labels first, each language in
@@ -843,7 +886,9 @@ local function searches(query, want_list)
   for i = 1, math.min(#query.authors, 2) do
     local author = query.authors[i]
     if text(author) then
-      out[#out + 1] = function() return search_query(query.title .. " " .. author) end
+      out[#out + 1] = function()
+        return search_query(search_words(query.title) .. " " .. search_words(author))
+      end
     end
   end
   local first = want_list[1] or "en"
@@ -999,11 +1044,18 @@ end
 -- The books among `qids` (not yet fetched), in order, each { qid, ent, work }: their claims
 -- fetched by `props`, and the works they are editions of (P629) with them. An item that is
 -- not a book (a film of the same name, its poster, a person) is left out.
+-- A request that failed: the first code is kept, to answer with when nothing was found; and
+-- a request to slow down (or the requests spent) ends the searching.
+local function note(state, err)
+  state.failed = state.failed or err
+  if err == "limited" or err == "spent" then state.limited = true end
+end
+
 local function books_among(qids, fetched, props, langs, state)
   -- A batch that fails leaves its items out; only a round with nothing at all fails.
   local entities, err = fetch_entities(qids, props, langs, MAX_CLAIM_BATCH, true)
   if err then
-    state.limited = state.limited or err == "limited"
+    note(state, err)
     if next(entities) == nil then return nil, err end
   end
   local added = {}
@@ -1024,7 +1076,7 @@ local function books_among(qids, fetched, props, langs, state)
   -- Works with their claims, so editions inherit the original title, author, series and
   -- cover, and say whether an edition with no class of its own is a book's. A work already
   -- fetched is not asked for again.
-  local to_fetch, works_failed = {}, false
+  local to_fetch, failed_works = {}, {}
   for _, qid in ipairs(work_qids) do
     if not fetched[qid] then to_fetch[#to_fetch + 1] = qid end
   end
@@ -1035,8 +1087,11 @@ local function books_among(qids, fetched, props, langs, state)
       fetched[k] = v
     end
     if work_err then
-      works_failed = true
-      state.limited = state.limited or work_err == "limited"
+      -- The works asked for that did not come.
+      for _, qid in ipairs(to_fetch) do
+        if works[qid] == nil then failed_works[qid] = true end
+      end
+      note(state, work_err)
       koona.log("warn", "wikidata work lookup failed: " .. tostring(work_err))
     end
   end
@@ -1044,7 +1099,7 @@ local function books_among(qids, fetched, props, langs, state)
   local books, keep = {}, {}
   for _, qid in ipairs(qids) do
     local ent = entities[qid]
-    if type(ent) == "table" and is_book(ent, fetched, works_failed) then
+    if type(ent) == "table" and is_book(ent, fetched, failed_works) then
       local work_ref = claim_qids(ent, "P629")[1]
       books[#books + 1] = { qid = qid, ent = ent, work = work_ref and fetched[work_ref.qid] or nil }
       keep[qid] = true
@@ -1081,7 +1136,7 @@ local function fetch_names(books, props, labels, asked_for, langs, state)
     asked_for[k] = true
   end
   if err then
-    state.limited = state.limited or err == "limited"
+    note(state, err)
     koona.log("warn", "wikidata label lookup failed: " .. tostring(err))
   end
 end
@@ -1102,6 +1157,7 @@ local function find_books(query, props, ref_props)
     asked = asked_names(query),
   }
   local by_author = #found.asked > 0
+  requests = 0
 
   local same, unknown, fetched, tried, names_asked = {}, {}, {}, {}, {}
   -- Whether any round found a book, by whoever; and whether Wikidata asked to slow down,
@@ -1109,11 +1165,12 @@ local function find_books(query, props, ref_props)
   local any_book, state = false, { limited = false }
   for _, run in ipairs(searches(query, want_list)) do
     local qids, err = run()
-    -- A search that fails after books were found ends the searching, not the call: what
-    -- was found (or that nothing by the author was) is the answer.
+    -- A search that fails after books were found ends the searching: what was found is the
+    -- answer (and with no row, the failure is: see the end).
     if not qids then
-      if any_book then break end
-      return nil, err
+      if not any_book then return nil, (err == "spent" and "limited" or err) end
+      note(state, err)
+      break
     end
     local fresh = {}
     for _, qid in ipairs(qids) do
@@ -1125,8 +1182,8 @@ local function find_books(query, props, ref_props)
     if #fresh > 0 then
       local books, books_err = books_among(fresh, fetched, props, langs, state)
       if not books then
-        if any_book then break end
-        return nil, books_err
+        if not any_book then return nil, (books_err == "spent" and "limited" or books_err) end
+        break
       end
       any_book = any_book or #books > 0
       if by_author and #books > 0 then
@@ -1166,6 +1223,11 @@ local function find_books(query, props, ref_props)
   local books = #same > 0 and same or unknown
   for i = 1, math.min(#books, MAX_BOOKS) do found.books[i] = books[i] end
   found.fetched = fetched
+  -- No row, and a search or a batch failed: the answer is the failure, not "nothing found",
+  -- which the app would keep and give again for the same question.
+  if #found.books == 0 and state.failed then
+    return nil, (state.failed == "spent" and "limited" or state.failed)
+  end
 
   -- Then the names the rows show, for the rows kept only.
   if #found.books > 0 then

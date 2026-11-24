@@ -410,7 +410,7 @@ describe("publish", () => {
       expect(r2.store.has("books/v1/index.json")).toBe(true);
       expect(r2.store.has("books/v1/index.json.sig")).toBe(true);
       expect(r2.store.has("books/v1/catalog.json")).toBe(true);
-      expect(r2.store.has("books/v1/app.koona.wikidata-1.0.0.kbooksaddon")).toBe(true);
+      expect(r2.store.has("books/v1/app.koona.wikidata-1.0.1.kbooksaddon")).toBe(true);
       expect(r2.store.has("books/v1/app.koona.book-links-1.0.0.kbooksaddon")).toBe(true);
     } finally {
       rmSync(tmp, { recursive: true, force: true });

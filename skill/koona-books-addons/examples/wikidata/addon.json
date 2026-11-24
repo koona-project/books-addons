@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "id": "app.koona.wikidata",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "api": 1,
   "min_app": "0.1.0",
   "name": {
@@ -27,7 +27,7 @@
     "book_query": true
   },
   "privacy": { "sends": ["book_details_to_service"], "collects": [] },
-  "tested": { "on": "www.wikidata.org/w/api.php", "date": "2026-11-21" },
+  "tested": { "on": "www.wikidata.org/w/api.php", "date": "2026-11-24" },
   "provides": [
     {
       "type": "book_info",

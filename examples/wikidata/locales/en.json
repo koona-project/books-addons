@@ -1,5 +1,6 @@
 {
   "does": "Looks a book up at Wikidata when you ask for its information or a cover: by its title and author. Finds multilingual titles, original titles, series, translators and Wikimedia Commons covers. Nothing changes until you choose.",
   "works": "Wikidata (www.wikidata.org, CC0 open catalog) and Wikimedia Commons for covers",
-  "changes": "First version"
+  "changes": "Finds books only: films, TV series, operas and characters of the same name are left out, and so are books by another author when you ask with an author",
+  "error.too_many": "Wikidata found more than it could look through for this book. Try its full title."
 }

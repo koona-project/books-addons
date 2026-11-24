@@ -129,6 +129,8 @@ end
 -- pace of 30 a minute the waits for a turn pass the call's 150 seconds a little after 75;
 -- past this many the add-on stops asking and answers with what it has.
 local MAX_REQUESTS = 60
+-- The count is the call's own: the app runs each call in a fresh VM (docs/addons/authors,
+-- "No state kept between calls"), so a search and a covers call never share it.
 -- Of those, the ones kept for the names the rows show (two batches), so the searching never
 -- spends them.
 local NAMES_RESERVE = 2
@@ -935,7 +937,9 @@ local function collect_label_refs(entities_list, props, have, cap)
   return qids
 end
 
-local function build_people(ent, work, labels_map, want_list, asked)
+-- The people of a book: its own authors, or else those of every work it is an edition of
+-- (the works by an author asked for first), then its translators, editors, illustrators.
+local function build_people(ent, works, labels_map, want_list, asked)
   local people, seen = {}, {}
   local function add_role(source_ent, prop, role)
     if not source_ent then return end
@@ -958,8 +962,17 @@ local function build_people(ent, work, labels_map, want_list, asked)
     end
   end
   add_role(ent, "P50", "author")
-  if #people == 0 and work then
-    add_role(work, "P50", "author")
+  if #people == 0 then
+    local by_asked, by_others = {}, {}
+    for _, w in ipairs(works) do
+      local agrees = false
+      for _, ref in ipairs(claim_qids(w, "P50")) do
+        if person_agrees(labels_map[ref.qid], asked) then agrees = true end
+      end
+      if agrees then by_asked[#by_asked + 1] = w else by_others[#by_others + 1] = w end
+    end
+    for _, w in ipairs(by_asked) do add_role(w, "P50", "author") end
+    for _, w in ipairs(by_others) do add_role(w, "P50", "author") end
   end
   add_role(ent, "P655", "translator")
   add_role(ent, "P98", "editor")
@@ -1004,7 +1017,7 @@ local function candidate(book, found)
     end
   end
 
-  local people = build_people(ent, work, labels_map, want_list, found.asked)
+  local people = build_people(ent, book.works or { work }, labels_map, want_list, found.asked)
 
   local publisher
   local pub_ref = claim_qids(ent, "P123")[1]

@@ -4,7 +4,7 @@ Multilingual book information and covers for Koona Books from Wikidata (`www.wik
 
 ## What it does
 
-- Looks a book up by title and author (`action=query&list=search`, 20 hits) with fallback to entity search (`action=wbsearchentities`, 20 hits) in the book's preferred language and English, each tried while none before it found a book.
+- Looks a book up by title and author (`action=query&list=search`, 20 hits) with fallback to entity search (`action=wbsearchentities`, 20 hits) in the book's preferred language and English, with the second author too, each tried while none before it found a book by the author asked for.
 - Fetches bounded entity batches with `languages=` filtering (`props=labels|claims` for matched items and `P629` parent works; `props=labels|aliases` only for referenced authors, translators, publishers, series, and genres).
 - Keeps books only: an item whose `P31` is a work of writing or an edition (literary work, written work, version/edition/translation, book, novel and the other classes in `BOOK_CLASSES`), or an edition (`P629`) of such a work. Films, series, operas and characters of the same title are left out.
 - When the query names an author, leaves out candidates whose authors (`P50` of the item or of its work) are known and are others, comparing every label and alias fetched in any word order and, across scripts, by consonants in Latin letters.

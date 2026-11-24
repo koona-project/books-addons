@@ -198,7 +198,8 @@ local function languages_param(want_list)
 end
 
 -- Fetch entities in bounded chunks, always passing `languages=` to stay well under host caps.
-local function fetch_entities(qids, props, langs, chunk_size)
+-- When a chunk fails: nil and the code, or, with `partial`, what came before it and the code.
+local function fetch_entities(qids, props, langs, chunk_size, partial)
   if #qids == 0 then return {} end
   local limit = chunk_size or MAX_CLAIM_BATCH
   local merged = {}
@@ -216,7 +217,10 @@ local function fetch_entities(qids, props, langs, chunk_size)
       { "languages", langs },
     }
     local answer, err = api_get(params)
-    if not answer then return nil, err end
+    if not answer then
+      if partial then return merged, err end
+      return nil, err
+    end
     if type(answer.entities) == "table" then
       for k, v in pairs(answer.entities) do
         merged[k] = v
@@ -535,6 +539,9 @@ local function prepared(name)
     local l = latin(w)
     if utf8.len(w) >= 2 then
       local c = l and consonants(l) or w
+      -- A short word cut to one letter ("li", "lu", "lee" all "l") says too little: it is
+      -- compared whole.
+      if l and #c < 2 then c = l end
       if c ~= "" then
         if not loose[c] then count = count + 1 end
         loose[c] = true
@@ -546,9 +553,17 @@ local function prepared(name)
     end
   end
   table.sort(sorted)
+  -- Run together as written, and, for two words, the other way round: the given name first
+  -- ("春樹 村上") is how a Western store may write it.
+  local compacts
+  if cjk then
+    compacts = { [table.concat(words)] = true }
+    if #words == 2 then compacts[words[2] .. words[1]] = true end
+  end
   return {
     key = table.concat(sorted, " "),
     compact = cjk and table.concat(words) or nil,
+    compacts = compacts,
     loose = loose,
     count = count,
     initials = initials,
@@ -581,7 +596,7 @@ end
 -- a part of the library's only when it is more than one word ("Скотт В." is, "Скотт" is not).
 local function same_name(asked, spelling)
   if asked.key ~= "" and asked.key == spelling.key then return true end
-  if asked.compact and asked.compact == spelling.compact then return true end
+  if asked.compacts and spelling.compact and asked.compacts[spelling.compact] then return true end
   if within(asked, spelling) then return true end
   return spelling.count + #spelling.initials >= 2 and within(spelling, asked)
 end
@@ -790,15 +805,19 @@ local function want_langs(query)
   return out
 end
 
--- The searches for the query, in order, each tried only while none before it found a book:
--- the title and author in full text, then the title among items' names in the language
--- wanted first, then in English.
+-- The searches for the query, in order, each tried only while none before it found a book
+-- (by the author asked for, when the query names one): the title and an author in full
+-- text, then the title among items' names in the language wanted first, then in English.
 local function searches(query, want_list)
   local out = {}
   if query.title == "" then return out end
-  local author = query.authors[1] or ""
-  if author ~= "" then
-    out[#out + 1] = function() return search_query(query.title .. " " .. author) end
+  -- The first two authors, each in turn: a second author is often the one Wikidata spells
+  -- as the library does.
+  for i = 1, math.min(#query.authors, 2) do
+    local author = query.authors[i]
+    if text(author) then
+      out[#out + 1] = function() return search_query(query.title .. " " .. author) end
+    end
   end
   local first = want_list[1] or "en"
   out[#out + 1] = function() return search_entities(query.title, first) end
@@ -810,12 +829,12 @@ end
 
 -- The items named by these entities' claims, authors first so that a long list cuts
 -- genres before people: at most 40.
-local function collect_label_refs(entities_list, props)
+local function collect_label_refs(entities_list, props, have, cap)
   local qids, seen = {}, {}
   for _, prop in ipairs(props) do
     for _, ent in ipairs(entities_list) do
       for _, ref in ipairs(claim_qids(ent, prop)) do
-        if not seen[ref.qid] and #qids < 40 then
+        if not seen[ref.qid] and not (have and have[ref.qid]) and #qids < (cap or 40) then
           seen[ref.qid] = true
           qids[#qids + 1] = ref.qid
         end
@@ -965,7 +984,7 @@ local function books_among(qids, fetched, props, langs)
   local work_qids, work_seen = {}, {}
   for _, qid in ipairs(qids) do
     for _, ref in ipairs(claim_qids(entities[qid], "P629")) do
-      if not work_seen[ref.qid] and #work_qids < MAX_CLAIM_BATCH then
+      if not work_seen[ref.qid] and #work_qids < MAX_HITS then
         work_seen[ref.qid] = true
         work_qids[#work_qids + 1] = ref.qid
       end
@@ -1009,11 +1028,35 @@ local function books_among(qids, fetched, props, langs)
   return books
 end
 
+-- The most items whose names are fetched in one step: two batches.
+local MAX_NAMES = 2 * MAX_LABEL_BATCH
+
+-- The names (labels and aliases, never claims, to stay small) of the items `props` name on
+-- these books and their works, added to `labels`: only those not asked for before
+-- (`asked_for`), at most MAX_NAMES. A batch that fails keeps what came before it.
+local function fetch_names(books, props, labels, asked_for, langs)
+  local with_claims = {}
+  for _, b in ipairs(books) do
+    with_claims[#with_claims + 1] = b.ent
+    if b.work then with_claims[#with_claims + 1] = b.work end
+  end
+  local ref_qids = collect_label_refs(with_claims, props, asked_for, MAX_NAMES)
+  if #ref_qids == 0 then return end
+  -- Each item is asked for once in a call, whether its batch answers or not.
+  for _, qid in ipairs(ref_qids) do asked_for[qid] = true end
+  local got, err = fetch_entities(ref_qids, "labels|aliases", langs, MAX_LABEL_BATCH, true)
+  for k, v in pairs(got or {}) do
+    labels[k] = v
+    asked_for[k] = true
+  end
+  if err then koona.log("warn", "wikidata label lookup failed: " .. tostring(err)) end
+end
+
 -- The books found for the query, in the catalog's order, each { qid, ent, work }, with the
 -- items their claims name (`ref_props`) fetched by labels and aliases. The searches are tried
--- in turn until one finds a book. When the query names an author, a book whose authors are
--- known and are others is left out, and so is a book whose authors are not known when
--- another's are the ones asked for.
+-- in turn until one finds a book, and, when the query names an author, a book by that
+-- author: a book whose authors are known and are others is left out, and a book whose
+-- authors are not known is kept only when no search finds one by the author asked for.
 local function find_books(query, props, ref_props)
   local want_list = want_langs(query)
   local langs = languages_param(want_list)
@@ -1024,11 +1067,16 @@ local function find_books(query, props, ref_props)
     isbn = query.identifiers.isbn and query.identifiers.isbn[1],
     asked = asked_names(query),
   }
+  local by_author = #found.asked > 0
 
-  local books, fetched, tried = {}, {}, {}
+  local same, unknown, fetched, tried, names_asked = {}, {}, {}, {}, {}
   for _, run in ipairs(searches(query, want_list)) do
     local qids, err = run()
-    if not qids then return nil, err end
+    -- A search that fails after books were found ends the searching, not the call.
+    if not qids then
+      if #unknown > 0 then break end
+      return nil, err
+    end
     local fresh = {}
     for _, qid in ipairs(qids) do
       if not tried[qid] then
@@ -1037,46 +1085,34 @@ local function find_books(query, props, ref_props)
       end
     end
     if #fresh > 0 then
-      local more, more_err = books_among(fresh, fetched, props, langs)
-      if not more then return nil, more_err end
-      for _, b in ipairs(more) do books[#books + 1] = b end
-    end
-    if #books > 0 then break end
-  end
-  found.fetched = fetched
-  if #books == 0 then return found end
-
-  -- The people, publishers, series and genres named, by labels and aliases only (never
-  -- claims), to stay small.
-  local with_claims = {}
-  for i = 1, math.min(#books, MAX_HITS) do
-    with_claims[#with_claims + 1] = books[i].ent
-    if books[i].work then with_claims[#with_claims + 1] = books[i].work end
-  end
-  local ref_qids = collect_label_refs(with_claims, ref_props)
-  if #ref_qids > 0 then
-    local labels, ref_err = fetch_entities(ref_qids, "labels|aliases", langs, MAX_LABEL_BATCH)
-    if labels then
-      found.labels = labels
-    elseif ref_err then
-      koona.log("warn", "wikidata label lookup failed: " .. ref_err)
-    end
-  end
-
-  if #found.asked > 0 then
-    local same, unknown = {}, {}
-    for _, b in ipairs(books) do
-      local stand = authors_stand(b.ent, b.work, found.labels, found.asked)
-      if stand == "same" then
-        same[#same + 1] = b
-      elseif stand == nil then
-        unknown[#unknown + 1] = b
+      local books, books_err = books_among(fresh, fetched, props, langs)
+      if not books then
+        if #unknown > 0 then break end
+        return nil, books_err
+      end
+      if by_author and #books > 0 then
+        -- The authors' names first, to see whose books these are.
+        fetch_names(books, { "P50" }, found.labels, names_asked, langs)
+        for _, b in ipairs(books) do
+          local stand = authors_stand(b.ent, b.work, found.labels, found.asked)
+          if stand == "same" then
+            same[#same + 1] = b
+          elseif stand == nil then
+            unknown[#unknown + 1] = b
+          end
+        end
+      else
+        for _, b in ipairs(books) do same[#same + 1] = b end
       end
     end
-    books = #same > 0 and same or unknown
+    if #same > 0 then break end
   end
+  local books = #same > 0 and same or unknown
   for i = 1, math.min(#books, MAX_BOOKS) do found.books[i] = books[i] end
   found.fetched = fetched
+
+  -- Then the names the rows show, for the rows kept only.
+  if #found.books > 0 then fetch_names(found.books, ref_props, found.labels, names_asked, langs) end
   return found
 end
 
